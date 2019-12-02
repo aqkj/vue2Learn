@@ -8,7 +8,9 @@ const flow = require('rollup-plugin-flow-no-whitespace')
 const version = process.env.VERSION || require('../package.json').version
 const weexVersion = process.env.WEEX_VERSION || require('../packages/weex-vue-framework/package.json').version
 const featureFlags = require('./feature-flags')
-
+/**
+ * 头部banner
+ */
 const banner =
   '/*!\n' +
   ` * Vue.js v${version}\n` +
@@ -24,8 +26,11 @@ const weexFactoryPlugin = {
     return '}'
   }
 }
-
+/**
+ * 各依赖模块路径
+ */
 const aliases = require('./alias')
+// 解析模块
 const resolve = p => {
   const base = p.split('/')[0]
   if (aliases[base]) {
@@ -34,7 +39,15 @@ const resolve = p => {
     return path.resolve(__dirname, '../', p)
   }
 }
-
+/**
+ * 打包配置
+ * entry: 打包入口地址
+ * dest: 打包后生成的地址
+ * format: 打包成模块方式commonjs esmodule umd....
+ * env: 环境
+ * alias: 模块别名
+ * banner: banner头
+ */
 const builds = {
   // Runtime only (CommonJS). Used by bundlers e.g. Webpack & Browserify
   'web-runtime-cjs-dev': {
@@ -212,30 +225,46 @@ const builds = {
     external: Object.keys(require('../packages/weex-template-compiler/package.json').dependencies)
   }
 }
-
+/**
+ * 生成对应打包配置
+ * @param {string} name 名称
+ */
 function genConfig (name) {
+  // 获取对应打包配置信息
   const opts = builds[name]
+  // 配置
   const config = {
+    // 入口,需要打包的文件
     input: opts.entry,
+    // 外链
     external: opts.external,
+    // 插件
     plugins: [
+      // 清除flow检查
       flow(),
+      // 模块别名
       alias(Object.assign({}, aliases, opts.alias))
     ].concat(opts.plugins || []),
+    // 生成
     output: {
+      // 生成文件
       file: opts.dest,
+      // 模块
       format: opts.format,
+      // 头部banner
       banner: opts.banner,
+      // 名称
       name: opts.moduleName || 'Vue'
     },
+    // 错误
     onwarn: (msg, warn) => {
       if (!/Circular/.test(msg)) {
         warn(msg)
       }
     }
   }
-
-  // built-in vars
+  /* 全局定义,跟webpack中webpack.DefinePlugin一样 */
+  // built-in var
   const vars = {
     __WEEX__: !!opts.weex,
     __WEEX_VERSION__: weexVersion,
@@ -250,22 +279,25 @@ function genConfig (name) {
     vars['process.env.NODE_ENV'] = JSON.stringify(opts.env)
   }
   config.plugins.push(replace(vars))
-
+  /** end */
   if (opts.transpile !== false) {
+    // buble用于将es6+转es2015标准
     config.plugins.push(buble())
   }
-
+  // 声明_name
   Object.defineProperty(config, '_name', {
     enumerable: false,
     value: name
   })
-
+  // 返回配置
   return config
 }
-
+// 传入当前环境
 if (process.env.TARGET) {
   module.exports = genConfig(process.env.TARGET)
 } else {
+  // 导出生成配置方法
   exports.getBuild = genConfig
+  // 导出生成所有配置方法
   exports.getAllBuilds = () => Object.keys(builds).map(genConfig)
 }
