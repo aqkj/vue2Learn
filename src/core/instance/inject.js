@@ -35,7 +35,11 @@ export function initInjections (vm: Component) {
     toggleObserving(true)
   }
 }
-
+/**
+ * 解析inject
+ * @param {any} inject inject属性
+ * @param {component} vm vue实例
+ */
 export function resolveInject (inject: any, vm: Component): ?Object {
   if (inject) {
     // inject is :any because flow is not smart enough to figure out cached

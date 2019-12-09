@@ -25,6 +25,15 @@ const ALWAYS_NORMALIZE = 2
 
 // wrapper function for providing a more flexible interface
 // without getting yelled at by flow
+/**
+ * 创建元素
+ * @param {any} context 上下文
+ * @param {any} tag 标签名称
+ * @param {any} data 数据对象
+ * @param {any} children 子元素
+ * @param {any} normalizationType 规范化类型
+ * @param {boolean} alwaysNormalize 始终规范化
+ */
 export function createElement (
   context: Component,
   tag: any,
@@ -33,17 +42,31 @@ export function createElement (
   normalizationType: any,
   alwaysNormalize: boolean
 ): VNode | Array<VNode> {
+  // 判断data是否为数组，或者是原始类型
   if (Array.isArray(data) || isPrimitive(data)) {
+    // 规范化类型为children
     normalizationType = children
+    // 将data设置为children
     children = data
+    // 将data设置为undefined
     data = undefined
   }
+  // 判断是否总是设置规范化类型
   if (isTrue(alwaysNormalize)) {
+    // 设置规范化类型ALWAYS_NORMALIZE
     normalizationType = ALWAYS_NORMALIZE
   }
+  // 返回私有创建元素方法
   return _createElement(context, tag, data, children, normalizationType)
 }
-
+/**
+ * 私有创建元素
+ * @param {any} context vue上下文
+ * @param {any} tag 元素
+ * @param {any} data data数据
+ * @param {any} children 子数组
+ * @param {any} normalizationType 规范化类型
+ */
 export function _createElement (
   context: Component,
   tag?: string | Class<Component> | Function | Object,
@@ -51,23 +74,29 @@ export function _createElement (
   children?: any,
   normalizationType?: number
 ): VNode | Array<VNode> {
+  // 如果vue的data上被挂载上了ob对象则警告
   if (isDef(data) && isDef((data: any).__ob__)) {
     process.env.NODE_ENV !== 'production' && warn(
       `Avoid using observed data object as vnode data: ${JSON.stringify(data)}\n` +
       'Always create fresh vnode data objects in each render!',
       context
     )
+    // 返回空vnode
     return createEmptyVNode()
   }
   // object syntax in v-bind
+  // 判断是否有is, <component is="name" />
   if (isDef(data) && isDef(data.is)) {
+    // 拿到is属性为组件名称
     tag = data.is
   }
+  // tag不存在
   if (!tag) {
     // in case of component :is set to falsy value
-    return createEmptyVNode()
+    return createEmptyVNode() // 返回空vnode
   }
   // warn against non-primitive key
+  // 如果key不是原始类型则警告例如 <node :key="{}" />则会报错
   if (process.env.NODE_ENV !== 'production' &&
     isDef(data) && isDef(data.key) && !isPrimitive(data.key)
   ) {
@@ -80,14 +109,20 @@ export function _createElement (
     }
   }
   // support single function children as default scoped slot
+  // 判断children是数组并且children第一个为方法
   if (Array.isArray(children) &&
     typeof children[0] === 'function'
   ) {
+    // 获取data
     data = data || {}
+    // 设置作用域插槽
     data.scopedSlots = { default: children[0] }
+    // 清空子元素
     children.length = 0
   }
+  // 如果规范化类型为一直规范化则调用
   if (normalizationType === ALWAYS_NORMALIZE) {
+    // 规范子元素数组
     children = normalizeChildren(children)
   } else if (normalizationType === SIMPLE_NORMALIZE) {
     children = simpleNormalizeChildren(children)

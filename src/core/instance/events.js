@@ -8,44 +8,78 @@ import {
   invokeWithErrorHandling
 } from '../util/index'
 import { updateListeners } from '../vdom/helpers/index'
-
+/**
+ * 初始化event
+ * @param {any} vm vue实例
+ */
 export function initEvents (vm: Component) {
+  // 设置私有events
   vm._events = Object.create(null)
+  // 判断是否有钩子event
   vm._hasHookEvent = false
   // init parent attached events
+  // 获取父级监听
   const listeners = vm.$options._parentListeners
+  // 判断监听是否存在
   if (listeners) {
+    // 更新组件监听
     updateComponentListeners(vm, listeners)
   }
 }
 
 let target: any
-
+/**
+ * 添加监听
+ * @param {string} event eventName
+ * @param {function} fn event方法
+ */
 function add (event, fn) {
+  // 设置监听
   target.$on(event, fn)
 }
-
+/**
+ * 移除监听
+ * @param {string} event eventname
+ * @param {function} fn event方法
+ */
 function remove (event, fn) {
+  // 移除监听
   target.$off(event, fn)
 }
-
+/**
+ * 创建单次触发
+ * @param {string} event eventName
+ * @param {function} fn 方法
+ */
 function createOnceHandler (event, fn) {
+  // 获取target
   const _target = target
+  // 创建单次触发方法
   return function onceHandler () {
+    // 调用方法，获取返回值
     const res = fn.apply(null, arguments)
+    // 如果返回值不为null则移除event
     if (res !== null) {
       _target.$off(event, onceHandler)
     }
   }
 }
-
+/**
+ * 更新组件监听
+ * @param {vue} vm vue实例
+ * @param {object} listeners 监听
+ * @param {object} oldListeners 旧监听
+ */
 export function updateComponentListeners (
   vm: Component,
   listeners: Object,
   oldListeners: ?Object
 ) {
+  // 设置target为当前实例
   target = vm
+  // 更新监听
   updateListeners(listeners, oldListeners || {}, add, remove, createOnceHandler, vm)
+  // 清空实例
   target = undefined
 }
 

@@ -3,7 +3,12 @@
 import { def } from 'core/util/lang'
 import { normalizeChildren } from 'core/vdom/helpers/normalize-children'
 import { emptyObject } from 'shared/util'
-
+/**
+ * 规范化插槽
+ * @param {Record<string, Function>} slots 插槽
+ * @param {*} normalSlots
+ * @param {*} prevSlots
+ */
 export function normalizeScopedSlots (
   slots: { [key: string]: Function } | void,
   normalSlots: { [key: string]: Array<VNode> },

@@ -15,23 +15,33 @@ import { normalizeScopedSlots } from '../vdom/helpers/normalize-scoped-slots'
 import VNode, { createEmptyVNode } from '../vdom/vnode'
 
 import { isUpdatingChildComponent } from './lifecycle'
-
+/**
+ * 初始化渲染
+ * @param {object} vm vue实例
+ */
 export function initRender (vm: Component) {
+  // 设置vnode
   vm._vnode = null // the root of the child tree
+  // 缓存的tree
   vm._staticTrees = null // v-once cached trees
+  // 获取实例配置
   const options = vm.$options
+  // 获取父vnode
   const parentVnode = vm.$vnode = options._parentVnode // the placeholder node in parent tree
+  // 获取渲染上下文
   const renderContext = parentVnode && parentVnode.context
+  // 解析获取插槽
   vm.$slots = resolveSlots(options._renderChildren, renderContext)
+  // 获取作用域插槽
   vm.$scopedSlots = emptyObject
   // bind the createElement fn to this instance
   // so that we get proper render context inside it.
   // args order: tag, data, children, normalizationType, alwaysNormalize
   // internal version is used by render functions compiled from templates
-  vm._c = (a, b, c, d) => createElement(vm, a, b, c, d, false)
+  vm._c = (a, b, c, d) => createElement(vm, a, b, c, d, false) // 代理createElement方法
   // normalization is always applied for the public version, used in
   // user-written render functions.
-  vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true)
+  vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true) // 代理createElement方法
 
   // $attrs & $listeners are exposed for easier HOC creation.
   // they need to be reactive so that HOCs using them are always updated

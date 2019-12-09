@@ -28,30 +28,43 @@ export function setActiveInstance(vm: Component) {
     activeInstance = prevActiveInstance
   }
 }
-
+/**
+ * 初始化生命周期
+ * @param {any} vm vue实例
+ */
 export function initLifecycle (vm: Component) {
+  // 获取实例配置
   const options = vm.$options
-
   // locate first non-abstract parent
+  // 获取父级
   let parent = options.parent
+  // 判断父级是否存在，并且自身非抽象
   if (parent && !options.abstract) {
+    // 循环调用获取非抽象父级
     while (parent.$options.abstract && parent.$parent) {
       parent = parent.$parent
     }
+    // 插入到父级的children数组中
     parent.$children.push(vm)
   }
-
+  // 设置父parent
   vm.$parent = parent
+  // 设置根，判断是否存在父，存在父则用父的根
   vm.$root = parent ? parent.$root : vm
-
+  // 设置子数组
   vm.$children = []
   vm.$refs = {}
-
+  // 设置watcher
   vm._watcher = null
+  // 设置_inactive
   vm._inactive = null
+  // 设置_directInactive
   vm._directInactive = false
+  // 设置是否mounted
   vm._isMounted = false
+  // 设置是否销毁
   vm._isDestroyed = false
+  // 设置是否在销毁中
   vm._isBeingDestroyed = false
 }
 

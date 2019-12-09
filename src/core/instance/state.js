@@ -34,7 +34,12 @@ const sharedPropertyDefinition = {
   get: noop,
   set: noop
 }
-
+/**
+ * 代理设置getset
+ * @param {object} target 对象
+ * @param {string} sourceKey 对象属性
+ * @param {string} key 对象属性的属性
+ */
 export function proxy (target: Object, sourceKey: string, key: string) {
   sharedPropertyDefinition.get = function proxyGetter () {
     return this[sourceKey][key]
@@ -206,26 +211,49 @@ function initComputed (vm: Component, computed: Object) {
     }
   }
 }
-
+/**
+ * 定义计算属性
+ * @param {object} target 对象
+ * @param {string} key 属性
+ * @param {*} userDef
+ */
 export function defineComputed (
   target: any,
   key: string,
   userDef: Object | Function
 ) {
-  const shouldCache = !isServerRendering()
+  // 判断是否需要缓存
+  const shouldCache = !isServerRendering() // 判断是否非服务器渲染，非服务器渲染则需要缓存
+  // 判断用户设置的值是否为方法
   if (typeof userDef === 'function') {
+    /**
+     * 如果为方法则设置将方法设置为get
+     * 通过shouldCache判断是否需要缓存
+     * 缓存用createComputedGetter(key)方法
+     * 非缓存用createGetterInvoker(userDef)
+     */
     sharedPropertyDefinition.get = shouldCache
       ? createComputedGetter(key)
       : createGetterInvoker(userDef)
+    // 设置set方法为空
     sharedPropertyDefinition.set = noop
   } else {
+    /**
+     * 如果userDef并非是方法
+     * 判断userDef是否设置get属性，没设置则设置为noop空，设置则继续
+     * 判断是否需要缓存（shouldCache）并且用户是否设置（userDef.cache）需要缓存
+     * 需要缓存则调用createComputedGetter(key)
+     * 不需要缓存则调用createGetterInvoker(userDef.get)
+     */
     sharedPropertyDefinition.get = userDef.get
       ? shouldCache && userDef.cache !== false
         ? createComputedGetter(key)
         : createGetterInvoker(userDef.get)
       : noop
+    // 设置set方法，判断用户是否设置set方法，没设置则为空
     sharedPropertyDefinition.set = userDef.set || noop
   }
+  // 判断当前环境是否非生产，并且如果set为空则当用户设置计算属性的值时则抛警告
   if (process.env.NODE_ENV !== 'production' &&
       sharedPropertyDefinition.set === noop) {
     sharedPropertyDefinition.set = function () {
@@ -235,26 +263,44 @@ export function defineComputed (
       )
     }
   }
+  // 设置对象属性
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
-
+/**
+ * 带缓存的计算属性get
+ * @param {string} key 属性
+ */
 function createComputedGetter (key) {
+  // 返回get方法
   return function computedGetter () {
+    // 获取对应计算属性的watcher
+    // 每个计算属性都会有一个watcher
     const watcher = this._computedWatchers && this._computedWatchers[key]
+    // 判断是否有watcher
     if (watcher) {
+      // 判断是否脏
       if (watcher.dirty) {
         watcher.evaluate()
       }
+      // 判断Dep.target是否有上下文
       if (Dep.target) {
+        // 依赖收集
         watcher.depend()
       }
+      // 返回watcher对应value
       return watcher.value
     }
   }
 }
-
+/**
+ * 不带缓存的计算getter
+ * createGetterInvoker(userDef.get)
+ * @param {function} fn 方法
+ */
 function createGetterInvoker(fn) {
+  // 返回对应方法
   return function computedGetter () {
+    // 调用传入的get方法
     return fn.call(this, this)
   }
 }

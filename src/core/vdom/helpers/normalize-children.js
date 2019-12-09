@@ -28,18 +28,36 @@ export function simpleNormalizeChildren (children: any) {
 // e.g. <template>, <slot>, v-for, or when the children is provided by user
 // with hand-written render functions / JSX. In such cases a full normalization
 // is needed to cater to all possible types of children values.
+/**
+ * 规范化子数组
+ * @param {any} children 子元素
+ */
 export function normalizeChildren (children: any): ?Array<VNode> {
+  /**
+   * 判断children是否为原始类型
+   * 创建textVnode并且包成数组
+   * 如果非原始类型，非数组则返回undefined，如果是数组
+   * 规范化子元素数组
+   */
   return isPrimitive(children)
     ? [createTextVNode(children)]
     : Array.isArray(children)
       ? normalizeArrayChildren(children)
       : undefined
 }
-
+/**
+ * 判断是否是文本元素
+ * @param {*} node
+ */
 function isTextNode (node): boolean {
+  // 判断node是否存在，并且有text属性，并且iscomment为false
   return isDef(node) && isDef(node.text) && isFalse(node.isComment)
 }
-
+/**
+ * 规范化子原属数组
+ * @param {any} children 子元素数组
+ * @param {string} nestedIndex 嵌套数组
+ */
 function normalizeArrayChildren (children: any, nestedIndex?: string): Array<VNode> {
   const res = []
   let i, c, lastIndex, last

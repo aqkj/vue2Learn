@@ -274,14 +274,18 @@ function mergeAssets (
   const res = Object.create(parentVal || null)
   // 判断子数据是否存在
   if (childVal) {
-    // 判断是否为非生产
+    // 判断是否为非生产,进行类型断言判断
     process.env.NODE_ENV !== 'production' && assertObjectType(key, childVal, vm)
+    // 调用继承方法
     return extend(res, childVal)
   } else {
+    // 返回res
     return res
   }
 }
-
+/**
+ * 将资源设置为合并资源策略
+ */
 ASSET_TYPES.forEach(function (type) {
   strats[type + 's'] = mergeAssets
 })
@@ -291,6 +295,7 @@ ASSET_TYPES.forEach(function (type) {
  *
  * Watchers hashes should not overwrite one
  * another, so we merge them as arrays.
+ * watch合并策略
  */
 strats.watch = function (
   parentVal: ?Object,
@@ -299,31 +304,48 @@ strats.watch = function (
   key: string
 ): ?Object {
   // work around Firefox's Object.prototype.watch...
+  // 判断父是否为原生watch
   if (parentVal === nativeWatch) parentVal = undefined
+  // 判断child是否为原生watch
   if (childVal === nativeWatch) childVal = undefined
   /* istanbul ignore if */
+  // childval不存在则返回创建一个基于父原型的对象
   if (!childVal) return Object.create(parentVal || null)
+  // 当前是否生产
   if (process.env.NODE_ENV !== 'production') {
+    // 对象类型断言
     assertObjectType(key, childVal, vm)
   }
+  // 如果父不存在则返回子
   if (!parentVal) return childVal
   const ret = {}
+  // 继承
   extend(ret, parentVal)
+  // 遍历
   for (const key in childVal) {
+    // 获取父
     let parent = ret[key]
+    // 获取子属性
     const child = childVal[key]
+    // 如果父为非数数组
     if (parent && !Array.isArray(parent)) {
       parent = [parent]
     }
+    // 设置对应watch属性
+    // 判断父是否存在
+    // 存在则合并到父
+    // 不存在则判断child是否为数组，为数组则返回，不为数组则包成数组
     ret[key] = parent
       ? parent.concat(child)
       : Array.isArray(child) ? child : [child]
   }
+  // 返回结果s
   return ret
 }
 
 /**
  * Other object hashes.
+ * 其他属性类型合并策略
  */
 strats.props =
 strats.methods =
@@ -334,19 +356,30 @@ strats.computed = function (
   vm?: Component,
   key: string
 ): ?Object {
+  // 判断是否存在child
   if (childVal && process.env.NODE_ENV !== 'production') {
+    // 类型断言
     assertObjectType(key, childVal, vm)
   }
+  // 父不存在则返回子
   if (!parentVal) return childVal
+  // 结果暂存
   const ret = Object.create(null)
+  // 将父合并到ret
   extend(ret, parentVal)
+  // 判断子是否存在，将子合并到ret
   if (childVal) extend(ret, childVal)
+  // 返回ret
   return ret
 }
+// provide合并策略为datafunction
 strats.provide = mergeDataOrFn
 
 /**
  * Default strategy.
+ * 默认合并策略
+ * 子存在则返回子
+ * 不存在则返回父
  */
 const defaultStrat = function (parentVal: any, childVal: any): any {
   return childVal === undefined
@@ -356,13 +389,17 @@ const defaultStrat = function (parentVal: any, childVal: any): any {
 
 /**
  * Validate component names
+ * 检查组件数组名称
  */
 function checkComponents (options: Object) {
   for (const key in options.components) {
     validateComponentName(key)
   }
 }
-
+/**
+ * 检查组件名称
+ * @param {string}} name 名称
+ */
 export function validateComponentName (name: string) {
   if (!new RegExp(`^[a-zA-Z][\\-\\.0-9_${unicodeRegExp.source}]*$`).test(name)) {
     warn(
@@ -457,9 +494,16 @@ function normalizeDirectives (options: Object) {
     }
   }
 }
-
+/**
+ * 对象类型断言
+ * @param {string} name 名称
+ * @param {any} value 值
+ * @param {any} vm vm实例
+ */
 function assertObjectType (name: string, value: any, vm: ?Component) {
+  // 判断是否非普通对象
   if (!isPlainObject(value)) {
+    // 警告
     warn(
       `Invalid value for option "${name}": expected an Object, ` +
       `but got ${toRawType(value)}.`,
@@ -471,51 +515,74 @@ function assertObjectType (name: string, value: any, vm: ?Component) {
 /**
  * Merge two option objects into a new one.
  * Core utility used in both instantiation and inheritance.
+ * 合并两个配置到一个新的配置
  */
 export function mergeOptions (
   parent: Object,
   child: Object,
   vm?: Component
 ): Object {
+  // 判断是否非生产
   if (process.env.NODE_ENV !== 'production') {
+    // 检查组件所有属性名称
     checkComponents(child)
   }
-
+  // 判断child为方法的话则代表其为构造器
   if (typeof child === 'function') {
+    // 获取child的options
     child = child.options
   }
-
+  // 规范化属性
   normalizeProps(child, vm)
+  // 规范化inject
   normalizeInject(child, vm)
+  // 规范化指令
   normalizeDirectives(child)
 
   // Apply extends and mixins on the child options,
   // but only if it is a raw options object that isn't
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
+  // 判断child._base是否不存
   if (!child._base) {
+    // 判断是否有extends
     if (child.extends) {
+      // 合并到父级
       parent = mergeOptions(parent, child.extends, vm)
     }
+    // 判断子mixins
     if (child.mixins) {
+      // 遍历mixins
       for (let i = 0, l = child.mixins.length; i < l; i++) {
+        // 合并配置到parent
         parent = mergeOptions(parent, child.mixins[i], vm)
       }
     }
   }
-
+  // 暂存配置
   const options = {}
   let key
+  // 遍历父配置
   for (key in parent) {
+    // 合并到options
     mergeField(key)
   }
+  // 遍历子配置
   for (key in child) {
+    // 判断父是否没有对应属性
     if (!hasOwn(parent, key)) {
+      // 合并到options
       mergeField(key)
     }
   }
+  /**
+   * 合并字段
+   * @param {string} key 字段名称
+   */
   function mergeField (key) {
+    // 获取对应合并策略
     const strat = strats[key] || defaultStrat
+    // 调用对应合并策略方法，设置对应options属性
     options[key] = strat(parent[key], child[key], vm, key)
   }
   return options
