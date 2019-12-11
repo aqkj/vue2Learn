@@ -97,7 +97,14 @@ const componentVNodeHooks = {
 }
 
 const hooksToMerge = Object.keys(componentVNodeHooks)
-
+/**
+ * 创建组件
+ * @param {function|component} Ctor 组件构造方法
+ * @param {object} data data
+ * @param {object} context 上下文
+ * @param {any[]} children
+ * @param {string} tag 标签名称
+ */
 export function createComponent (
   Ctor: Class<Component> | Function | Object | void,
   data: ?VNodeData,
@@ -105,29 +112,35 @@ export function createComponent (
   children: ?Array<VNode>,
   tag?: string
 ): VNode | Array<VNode> | void {
+  // 构造器不存在则直接返回undefined
   if (isUndef(Ctor)) {
     return
   }
-
+  // 获取base构造器
   const baseCtor = context.$options._base
 
   // plain options object: turn it into a constructor
+  // 判断当前构造方法是否是对象
   if (isObject(Ctor)) {
+    // 是对象则将其当为参数传递给base构造函数，继承生成新的 组件构造函数
     Ctor = baseCtor.extend(Ctor)
   }
 
   // if at this stage it's not a constructor or an async component factory,
   // reject.
+  // 如果构造函数非方法
   if (typeof Ctor !== 'function') {
+    // 非生产报警告
     if (process.env.NODE_ENV !== 'production') {
       warn(`Invalid Component definition: ${String(Ctor)}`, context)
     }
+    // 返回undefined
     return
   }
 
   // async component
   let asyncFactory
-  if (isUndef(Ctor.cid)) {
+  if (isUndef(Ctor.cid)) { // 判断构造器是否有cid
     asyncFactory = Ctor
     Ctor = resolveAsyncComponent(asyncFactory, baseCtor)
     if (Ctor === undefined) {
@@ -144,15 +157,15 @@ export function createComponent (
     }
   }
 
-  data = data || {}
+  data = data || {} // 获取data
 
   // resolve constructor options in case global mixins are applied after
   // component constructor creation
-  resolveConstructorOptions(Ctor)
+  resolveConstructorOptions(Ctor) // 解析构造器配置，用于更新配置
 
   // transform component v-model data into props & events
-  if (isDef(data.model)) {
-    transformModel(Ctor.options, data)
+  if (isDef(data.model)) { // v-model语法糖解析
+    transformModel(Ctor.options, data) // model语法糖拆分成属性和事件
   }
 
   // extract props
@@ -247,22 +260,36 @@ function mergeHook (f1: any, f2: any): Function {
 
 // transform component v-model info (value and callback) into
 // prop and event handler respectively.
+/**
+ * 转变vmodel并且分别触发prop和事件
+ * @param {*} options
+ * @param {*} data
+ */
 function transformModel (options, data: any) {
+  // 获取model配置,默认为value
   const prop = (options.model && options.model.prop) || 'value'
+  // 获取model配置下的event，默认为input
   const event = (options.model && options.model.event) || 'input'
+  // 设置data的attr属性为prop，值为model下的value
   ;(data.attrs || (data.attrs = {}))[prop] = data.model.value
+  // 获取监听的on对象
   const on = data.on || (data.on = {})
+  // 获取对应event，如果存在的话
   const existing = on[event]
+  // 获取model的callback
   const callback = data.model.callback
+  // 判断对应事件是否存在
   if (isDef(existing)) {
+    // 存在则判断是否为数组，并且判断callback是否在是否在event数组内
     if (
       Array.isArray(existing)
         ? existing.indexOf(callback) === -1
         : existing !== callback
     ) {
-      on[event] = [callback].concat(existing)
+      on[event] = [callback].concat(existing) // 不存在则拼接金event事件
     }
   } else {
+    // 如果不存在则设置event方法为callback
     on[event] = callback
   }
 }

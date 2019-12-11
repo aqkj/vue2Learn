@@ -13,9 +13,10 @@ import {
 } from '../util/index'
 
 export const MAX_UPDATE_COUNT = 100
-
+// 存储观察者队列
 const queue: Array<Watcher> = []
 const activatedChildren: Array<Component> = []
+// 存储观察者是否存在
 let has: { [key: number]: ?true } = {}
 let circular: { [key: number]: number } = {}
 let waiting = false
@@ -24,6 +25,7 @@ let index = 0
 
 /**
  * Reset the scheduler's state.
+ * 重置
  */
 function resetSchedulerState () {
   index = queue.length = activatedChildren.length = 0
@@ -67,9 +69,12 @@ if (inBrowser && !isIE) {
 
 /**
  * Flush both queues and run the watchers.
+ * 刷新队列
  */
 function flushSchedulerQueue () {
+  // 获取当前时间戳
   currentFlushTimestamp = getNow()
+  // 刷新
   flushing = true
   let watcher, id
 
@@ -81,19 +86,26 @@ function flushSchedulerQueue () {
   //    user watchers are created before the render watcher)
   // 3. If a component is destroyed during a parent component's watcher run,
   //    its watchers can be skipped.
-  queue.sort((a, b) => a.id - b.id)
+  queue.sort((a, b) => a.id - b.id) // 排列顺序从小 到达排序
 
   // do not cache length because more watchers might be pushed
   // as we run existing watchers
+  // 遍历队列数组
   for (index = 0; index < queue.length; index++) {
+    // 获取对应watcher
     watcher = queue[index]
+    // 判断是否有before前置方法，则调用
     if (watcher.before) {
       watcher.before()
     }
+    // 获取对应id
     id = watcher.id
+    // 设置has为null
     has[id] = null
+    // 调用run
     watcher.run()
     // in dev build, check and stop circular updates.
+    // 检查更新循环报错
     if (process.env.NODE_ENV !== 'production' && has[id] != null) {
       circular[id] = (circular[id] || 0) + 1
       if (circular[id] > MAX_UPDATE_COUNT) {
@@ -160,30 +172,40 @@ function callActivatedHooks (queue) {
  * Push a watcher into the watcher queue.
  * Jobs with duplicate IDs will be skipped unless it's
  * pushed when the queue is being flushed.
+ * 推送观察者到观察者队列
  */
 export function queueWatcher (watcher: Watcher) {
+  // 获取watcherid
   const id = watcher.id
+  // 判断是否存在
   if (has[id] == null) {
+    // 设置对应为true
     has[id] = true
+    // 非刷新
     if (!flushing) {
+      // 存储进队列
       queue.push(watcher)
     } else {
       // if already flushing, splice the watcher based on its id
       // if already past its id, it will be run next immediately.
+      // 获取最后的index
       let i = queue.length - 1
+      // 找到对应的位置id从小到大排序
       while (i > index && queue[i].id > watcher.id) {
         i--
       }
+      // 添加到对应的位置
       queue.splice(i + 1, 0, watcher)
     }
     // queue the flush
     if (!waiting) {
       waiting = true
-
+      // 非生产非异步
       if (process.env.NODE_ENV !== 'production' && !config.async) {
         flushSchedulerQueue()
         return
       }
+      // 在下一次渲染再进行调用
       nextTick(flushSchedulerQueue)
     }
   }

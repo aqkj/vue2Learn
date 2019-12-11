@@ -125,7 +125,14 @@ export function FunctionalRenderContext (
 }
 
 installRenderHelpers(FunctionalRenderContext.prototype)
-
+/**
+ * 创建函数化组件
+ * @param {component} Ctor 构造器
+ * @param {object} propsData 属性数据
+ * @param {object} data 数据
+ * @param {object} contextVm 组件实例上下文
+ * @param {any[]} children 子元素
+ */
 export function createFunctionalComponent (
   Ctor: Class<Component>,
   propsData: ?Object,
@@ -133,18 +140,27 @@ export function createFunctionalComponent (
   contextVm: Component,
   children: ?Array<VNode>
 ): VNode | Array<VNode> | void {
+  // 获取构造器的配置
   const options = Ctor.options
+  // 暂存peops
   const props = {}
+  // 获取配置的props数据
   const propOptions = options.props
+  // 判断是否有propsOptions
   if (isDef(propOptions)) {
+    // 遍历属性
     for (const key in propOptions) {
+      // 校验属性，并且赋值
       props[key] = validateProp(key, propOptions, propsData || emptyObject)
     }
   } else {
+    // 如果未设置属性则合并到props
     if (isDef(data.attrs)) mergeProps(props, data.attrs)
     if (isDef(data.props)) mergeProps(props, data.props)
   }
-
+  /**
+   * 创建函数化渲染上下文
+   */
   const renderContext = new FunctionalRenderContext(
     data,
     props,
@@ -152,37 +168,56 @@ export function createFunctionalComponent (
     contextVm,
     Ctor
   )
-
+  // 获取虚拟节点树
   const vnode = options.render.call(null, renderContext._c, renderContext)
-
+  // 判断是否是vnode
   if (vnode instanceof VNode) {
+    // 克隆vnode
     return cloneAndMarkFunctionalResult(vnode, data, renderContext.parent, options, renderContext)
   } else if (Array.isArray(vnode)) {
+    // 规范化子元素
     const vnodes = normalizeChildren(vnode) || []
+    // 创建新数组
     const res = new Array(vnodes.length)
+    // 遍历vnode数组
     for (let i = 0; i < vnodes.length; i++) {
+      // clone并返回
       res[i] = cloneAndMarkFunctionalResult(vnodes[i], data, renderContext.parent, options, renderContext)
     }
+    // 返回结果
     return res
   }
 }
-
+/**
+ * 返回克隆的vnode
+ * @param {objecy} vnode
+ * @param {objecy} data
+ * @param {objecy} contextVm
+ * @param {object} options
+ * @param {objecy} renderContext
+ */
 function cloneAndMarkFunctionalResult (vnode, data, contextVm, options, renderContext) {
   // #7817 clone node before setting fnContext, otherwise if the node is reused
   // (e.g. it was from a cached normal slot) the fnContext causes named slots
   // that should not be matched to match.
-  const clone = cloneVNode(vnode)
-  clone.fnContext = contextVm
-  clone.fnOptions = options
+  const clone = cloneVNode(vnode) // 克隆返回一个新vnode
+  clone.fnContext = contextVm // 方法上下文
+  clone.fnOptions = options // 方法配置
   if (process.env.NODE_ENV !== 'production') {
     (clone.devtoolsMeta = clone.devtoolsMeta || {}).renderContext = renderContext
   }
+  // 如果有slot，设置clone后的slot
   if (data.slot) {
     (clone.data || (clone.data = {})).slot = data.slot
   }
+  // 返回新的vnode
   return clone
 }
-
+/**
+ * 合并属性
+ * @param {object} to
+ * @param {objecy} from
+ */
 function mergeProps (to, from) {
   for (const key in from) {
     to[camelize(key)] = from[key]

@@ -124,27 +124,31 @@ export function _createElement (
   if (normalizationType === ALWAYS_NORMALIZE) {
     // 规范子元素数组
     children = normalizeChildren(children)
-  } else if (normalizationType === SIMPLE_NORMALIZE) {
+  } else if (normalizationType === SIMPLE_NORMALIZE) { // 简单规范
     children = simpleNormalizeChildren(children)
   }
   let vnode, ns
-  if (typeof tag === 'string') {
+  if (typeof tag === 'string') { // 判断tag如果为字符串
     let Ctor
+    // 获取namespace
     ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag)
+    // 判断是否为保留的html自带标签和svg标签
     if (config.isReservedTag(tag)) {
-      // platform built-in elements
+      // platform built-in elements 判断组件是否绑定nativeOn,绑定 则报错
       if (process.env.NODE_ENV !== 'production' && isDef(data) && isDef(data.nativeOn)) {
         warn(
           `The .native modifier for v-on is only valid on components but it was used on <${tag}>.`,
           context
         )
       }
+      // 创建虚拟node
       vnode = new VNode(
         config.parsePlatformTagName(tag), data, children,
         undefined, undefined, context
       )
-    } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
+    } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) { // 判断并且获取组件构造方法
       // component
+      // 是组件的情况下创建组件
       vnode = createComponent(Ctor, data, context, children, tag)
     } else {
       // unknown or unlisted namespaced elements
