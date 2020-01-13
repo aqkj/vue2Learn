@@ -33,7 +33,7 @@ import {
 } from 'weex/runtime/recycle-list/render-component-template'
 
 // inline hooks to be invoked on component VNodes during patch
-const componentVNodeHooks = {
+const componentVNodeHooks = { // 组件各阶段钩子
   init (vnode: VNodeWithData, hydrating: boolean): ?boolean {
     if (
       vnode.componentInstance &&
@@ -169,37 +169,42 @@ export function createComponent (
   }
 
   // extract props
-  const propsData = extractPropsFromVNodeData(data, Ctor, tag)
+  // 提取属性
+  const propsData = extractPropsFromVNodeData(data, Ctor, tag) // 提取属性
 
   // functional component
-  if (isTrue(Ctor.options.functional)) {
+  if (isTrue(Ctor.options.functional)) { // 如果构造函数是函数化组件
+    // 创建函数化组件
     return createFunctionalComponent(Ctor, propsData, data, context, children)
   }
 
   // extract listeners, since these needs to be treated as
   // child component listeners instead of DOM listeners
+  // 获取data挂载的on对象，一般是用户挂载在元素上的@event
   const listeners = data.on
   // replace with listeners with .native modifier
   // so it gets processed during parent component patch.
+  // 设置on对象为原生on
   data.on = data.nativeOn
-
+  // 判断构造器是否为抽象
   if (isTrue(Ctor.options.abstract)) {
     // abstract components do not keep anything
     // other than props & listeners & slot
 
     // work around flow
-    const slot = data.slot
-    data = {}
-    if (slot) {
-      data.slot = slot
+    const slot = data.slot // 暂存slot插槽
+    data = {} // 设置data为空
+    if (slot) { // 如果插槽存在
+      data.slot = slot // 重新赋值
     }
   }
 
   // install component management hooks onto the placeholder node
-  installComponentHooks(data)
+  installComponentHooks(data) // 安装组件钩子
 
   // return a placeholder vnode
-  const name = Ctor.options.name || tag
+  const name = Ctor.options.name || tag // 获取组件的名称
+  // 创建对应组件vnode对象
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
     data, undefined, undefined, undefined, context,
@@ -214,7 +219,7 @@ export function createComponent (
   if (__WEEX__ && isRecyclableComponent(vnode)) {
     return renderRecyclableComponentTemplate(vnode)
   }
-
+  // 返回vnode对象
   return vnode
 }
 
@@ -235,26 +240,43 @@ export function createComponentInstanceForVnode (
   }
   return new vnode.componentOptions.Ctor(options)
 }
-
+/**
+ * 安装组件钩子
+ * @param {*} data
+ */
 function installComponentHooks (data: VNodeData) {
+  // 获取钩子
   const hooks = data.hook || (data.hook = {})
+  // 遍历钩子属性
   for (let i = 0; i < hooksToMerge.length; i++) {
+    // 获取对应钩子名称
     const key = hooksToMerge[i]
+    // 如果存在钩子则获取
     const existing = hooks[key]
+    // 拿到组件钩子对象
     const toMerge = componentVNodeHooks[key]
+    // 判断传递钩子和全局定义的钩子是否不相同，并且钩子不存在，或者没合并
     if (existing !== toMerge && !(existing && existing._merged)) {
+      // 设置对应钩子，如果存在则合并钩子
       hooks[key] = existing ? mergeHook(toMerge, existing) : toMerge
     }
   }
 }
-
+/**
+ * 合并钩子
+ * @param {any} f1 钩子方法
+ * @param {any} f2 钩子方法
+ */
 function mergeHook (f1: any, f2: any): Function {
+  // 创建一个新方法
   const merged = (a, b) => {
     // flow complains about extra args which is why we use any
     f1(a, b)
     f2(a, b)
   }
+  // 设置合并字段为true
   merged._merged = true
+  // 返回合并后的钩子方法
   return merged
 }
 

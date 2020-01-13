@@ -154,6 +154,7 @@ export function _createElement (
       // unknown or unlisted namespaced elements
       // check at runtime because it may get assigned a namespace when its
       // parent normalizes children
+      // 未知的标签元素，直接创建vnode元素
       vnode = new VNode(
         tag, data, children,
         undefined, undefined, context
@@ -161,16 +162,19 @@ export function _createElement (
     }
   } else {
     // direct component options / constructor
+    // 如果tag不是一个字符串，是一个组件配置或者构造器的话，则创建组件
     vnode = createComponent(tag, data, context, children)
   }
+  // 判断vnode类型是否为数组
   if (Array.isArray(vnode)) {
+    // 直接返回vnode数组
     return vnode
   } else if (isDef(vnode)) {
     if (isDef(ns)) applyNS(vnode, ns)
     if (isDef(data)) registerDeepBindings(data)
-    return vnode
+    return vnode // 返回vnode
   } else {
-    return createEmptyVNode()
+    return createEmptyVNode() // 不存在则返回空的vnode
   }
 }
 

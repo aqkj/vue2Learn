@@ -49,23 +49,38 @@ export function proxy (target: Object, sourceKey: string, key: string) {
   }
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
-
+/**
+ * 初始化state
+ * @param {*} vm
+ */
 export function initState (vm: Component) {
+  // 初始化观察数组
   vm._watchers = []
+  // 获取options
   const opts = vm.$options
+  // 如果props存在，初始化props
   if (opts.props) initProps(vm, opts.props)
+  // 如果methods存在，初始化methods
   if (opts.methods) initMethods(vm, opts.methods)
+  // 如果data存在初始化data
   if (opts.data) {
     initData(vm)
   } else {
+    // 不存在则观察data对象
     observe(vm._data = {}, true /* asRootData */)
   }
+  // 判断是否存在计算属性，初始化计算属性
   if (opts.computed) initComputed(vm, opts.computed)
+  // 判断是否存在watch属性，初始化watch
   if (opts.watch && opts.watch !== nativeWatch) {
     initWatch(vm, opts.watch)
   }
 }
-
+/**
+ * 初始化props
+ * @param {object} vm vue实例
+ * @param {object} propsOptions 属性配置
+ */
 function initProps (vm: Component, propsOptions: Object) {
   const propsData = vm.$options.propsData || {}
   const props = vm._props = {}
