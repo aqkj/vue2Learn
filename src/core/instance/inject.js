@@ -3,10 +3,16 @@
 import { hasOwn } from 'shared/util'
 import { warn, hasSymbol } from '../util/index'
 import { defineReactive, toggleObserving } from '../observer/index'
-
+/**
+ * 初始化provide
+ * @param {*} vm
+ */
 export function initProvide (vm: Component) {
+  // 获取配置provide
   const provide = vm.$options.provide
+  // 如果provide存在
   if (provide) {
+    // 如果是方法则获取返回值，将其值挂载到_provided属性上
     vm._provided = typeof provide === 'function'
       ? provide.call(vm)
       : provide

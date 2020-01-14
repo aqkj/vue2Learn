@@ -71,8 +71,11 @@ export function initMixin (Vue: Class<Component>) {
     callHook(vm, 'beforeCreate')
     // 初始化解析inject
     initInjections(vm) // resolve injections before data/props
+    // 初始化状态
     initState(vm)
+    // 初始化provide
     initProvide(vm) // resolve provide after data/props
+    // 调用created钩子
     callHook(vm, 'created')
 
     /* istanbul ignore if */
@@ -81,8 +84,9 @@ export function initMixin (Vue: Class<Component>) {
       mark(endTag)
       measure(`vue ${vm._name} init`, startTag, endTag)
     }
-
+    // 判断是否存在el配置
     if (vm.$options.el) {
+      // 调用$mount挂载
       vm.$mount(vm.$options.el)
     }
   }

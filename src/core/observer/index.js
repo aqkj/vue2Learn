@@ -64,7 +64,7 @@ export class Observer {
       // 如果是数组则调用观察数组方法
       this.observeArray(value)
     } else {
-      // 非数组则调用walk
+      // 非数组则调用walk观察对象属性
       this.walk(value)
     }
   }
@@ -135,6 +135,8 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  * 给值创建一个observer实例
+ * @param {any} value 观察的值
+ * @param {boolean} asRootData 是否为根data
  */
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   // 如果是一个非对象或者是vnode的话，直接返回undefined
@@ -156,6 +158,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
     // 创建一个新的observer对象
     ob = new Observer(value)
   }
+  // 如果为根data并且ob对象创建成功则++
   if (asRootData && ob) {
     ob.vmCount++
   }
@@ -197,7 +200,7 @@ export function defineReactive (
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key] // 设置val为object属性的值
   }
-  // 如果非浅观察，则观察对应值
+  // 如果非浅观察，则观察对应值,返回observe对象
   let childOb = !shallow && observe(val)
   // 定义属性
   Object.defineProperty(obj, key, {
@@ -260,52 +263,86 @@ export function defineReactive (
  * triggers change notification if the property doesn't
  * already exist.
  */
+/**
+ * 为一个对象或者数组设置属性
+ * @param {any} target 对象或者数组
+ * @param {any} key 属性名
+ * @param {any} val 值
+ */
 export function set (target: Array<any> | Object, key: any, val: any): any {
+  // 非生产环境，如果target为定义或者为原始类型则报错
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
     warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
+  // 如果target为数组，并且key为一个合法的数组index
   if (Array.isArray(target) && isValidArrayIndex(key)) {
+    // 设置数组的长度
     target.length = Math.max(target.length, key)
+    // 修改对应位置的值
     target.splice(key, 1, val)
+    // 返回值
     return val
   }
+  // 判断key是否存在于target上，并且不是object原型上的属性
   if (key in target && !(key in Object.prototype)) {
+    // 设置对应值
     target[key] = val
+    // 返回值
     return val
   }
+  // 获取target上的ob对象
   const ob = (target: any).__ob__
+  // 如果target是vue实例，或者target为根data
   if (target._isVue || (ob && ob.vmCount)) {
+    // 非生产则报错
     process.env.NODE_ENV !== 'production' && warn(
       'Avoid adding reactive properties to a Vue instance or its root $data ' +
       'at runtime - declare it upfront in the data option.'
     )
+    // 返回值
     return val
   }
+  // 如果ob不存在，说明当前对象非响应式
   if (!ob) {
+    // 修改值
     target[key] = val
+    // 返回值
     return val
   }
+  // 其他则为对象定义响应
   defineReactive(ob.value, key, val)
+  // 并且通知更新
   ob.dep.notify()
+  // 返回value
   return val
 }
 
 /**
  * Delete a property and trigger change if necessary.
  */
+/**
+ * 删除一个属性并且触发修改
+ * @param {object} target 对象或者数组
+ * @param {any} key 属性名
+ */
 export function del (target: Array<any> | Object, key: any) {
+  // 如果非生产并且target为定义并且为原始类型则报错
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
     warn(`Cannot delete reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
+  // 如果target为数组，并且key为一个合法的index
   if (Array.isArray(target) && isValidArrayIndex(key)) {
+    // 删除对应位置的值
     target.splice(key, 1)
     return
   }
+  // 获取当前target的ob对象
   const ob = (target: any).__ob__
+  // 如果target是一个vue对象，或者为一个根data则报错
   if (target._isVue || (ob && ob.vmCount)) {
     process.env.NODE_ENV !== 'production' && warn(
       'Avoid deleting properties on a Vue instance or its root $data ' +
@@ -313,13 +350,17 @@ export function del (target: Array<any> | Object, key: any) {
     )
     return
   }
+  // 判断target中不存在key，则直接返回
   if (!hasOwn(target, key)) {
     return
   }
+  // 删除对应的key
   delete target[key]
+  // 如果不存在ob则代表非响应
   if (!ob) {
     return
   }
+  // 通知更新
   ob.dep.notify()
 }
 

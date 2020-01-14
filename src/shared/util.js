@@ -68,7 +68,7 @@ export function isObject (obj: mixed): boolean %checks {
  */
 const _toString = Object.prototype.toString
 /**
- * 返回toString的类型[Obejct 类型]
+ * 返回toString的类型[Object 类型]
  * @param {any} value
  */
 export function toRawType (value: any): string {

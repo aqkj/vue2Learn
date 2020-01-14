@@ -64,14 +64,14 @@ export default class Watcher {
       // 设置_watcher
       vm._watcher = this
     }
-    // 添加wathcer到实例
+    // 添加wathcer到实例的_watchers数组内
     vm._watchers.push(this)
     // options
     // 如果配置存在
     if (options) {
       this.deep = !!options.deep // 深度
       this.user = !!options.user // 目前不知道干啥的
-      this.lazy = !!options.lazy // 目前不知道干啥的
+      this.lazy = !!options.lazy // 懒
       this.sync = !!options.sync
       this.before = options.before
     } else {
@@ -80,7 +80,7 @@ export default class Watcher {
     this.cb = cb // 获取回调
     this.id = ++uid // uid for batching 设置uid
     this.active = true // 默认为true
-    this.dirty = this.lazy // for lazy watchers
+    this.dirty = this.lazy // for lazy watchers 脏检查
     this.deps = [] // deps用于跟dep绑定
     this.newDeps = [] // 新deps
     this.depIds = new Set() // depid
@@ -111,7 +111,7 @@ export default class Watcher {
 
   /**
    * Evaluate the getter, and re-collect dependencies.
-   * 收集依赖
+   * 调用getter并且收集依赖
    */
   get () {
     // 将当前watcher挂载用于收集依赖
@@ -252,37 +252,49 @@ export default class Watcher {
   /**
    * Evaluate the value of the watcher.
    * This only gets called for lazy watchers.
+   * 懒惰的观察者调用
    */
   evaluate () {
-    this.value = this.get()
-    this.dirty = false
+    this.value = this.get() // 调用getter
+    this.dirty = false // 懒为false
   }
 
   /**
    * Depend on all deps collected by this watcher.
+   * 收集依赖
    */
   depend () {
     let i = this.deps.length
+    // 遍历dep依赖
     while (i--) {
+      // dep依赖进行依赖收集
       this.deps[i].depend()
     }
   }
 
   /**
    * Remove self from all dependencies' subscriber list.
+   * 移除自身的依赖关联进行解绑
    */
   teardown () {
+    // 默认为true
     if (this.active) {
       // remove self from vm's watcher list
       // this is a somewhat expensive operation so we skip it
       // if the vm is being destroyed.
+      // vm销毁了，我们就跳过删除自身
       if (!this.vm._isBeingDestroyed) {
+        // 从实例中的watchers移除自己
         remove(this.vm._watchers, this)
       }
+      // 获取dep的长度
       let i = this.deps.length
+      // 遍历dep依赖
       while (i--) {
+        // 删除依赖关联
         this.deps[i].removeSub(this)
       }
+      // 设置为false
       this.active = false
     }
   }

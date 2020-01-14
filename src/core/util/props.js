@@ -21,7 +21,7 @@ type PropOptions = {
  * 校验属性
  * @param {string} key 对应属性
  * @param {object} propOptions 属性配置
- * @param {object} propsData 属性数据
+ * @param {object} propsData 传入组件的属性数据
  * @param {objecy} vm vue实例
  */
 export function validateProp (
@@ -34,7 +34,7 @@ export function validateProp (
   const prop = propOptions[key]
   // 判断key是否存在于propsData内
   const absent = !hasOwn(propsData, key)
-  // 获取值
+  // 获取传入的值
   let value = propsData[key]
   // boolean casting
   // 获取对应类型的位置
@@ -55,6 +55,7 @@ export function validateProp (
   }
   // check default value
   if (value === undefined) { // 如果value为未定义
+    // 如果不存在则获取prop默认值
     value = getPropDefaultValue(vm, prop, key) // 获取prop默认值
     // since the default value is a fresh copy,
     // make sure to observe it.
@@ -72,8 +73,10 @@ export function validateProp (
     // skip validation for weex recycle-list child component props
     !(__WEEX__ && isObject(value) && ('@binding' in value))
   ) {
+    // 非生产环境则断言校验prop类型
     assertProp(prop, key, value, vm, absent)
   }
+  // 返回值
   return value
 }
 
@@ -120,6 +123,12 @@ function getPropDefaultValue (vm: ?Component, prop: PropOptions, key: string): a
 
 /**
  * Assert whether a prop is valid.
+ * 断言校验prop类型
+ * @param {Object} prop 属性配置
+ * @param {string} name 属性键key
+ * @param {any} value 属性对应值
+ * @param {object} vm vue实例
+ * @param {boolean} absent 属性key是否没传递
  */
 function assertProp (
   prop: PropOptions,
@@ -128,6 +137,7 @@ function assertProp (
   vm: ?Component,
   absent: boolean
 ) {
+  // 如果prop为必填,并且没传递则报错警告
   if (prop.required && absent) {
     warn(
       'Missing required prop: "' + name + '"',
@@ -135,17 +145,25 @@ function assertProp (
     )
     return
   }
+  // 如果值为null并且非必填
   if (value == null && !prop.required) {
     return
   }
+  // 获取prop的类型
   let type = prop.type
+  // 类型存在时则为false
   let valid = !type || type === true
   const expectedTypes = []
+  // 如果类型设置存在
   if (type) {
+    // 如果类型非数组类型
     if (!Array.isArray(type)) {
+      // 重写类型为数组
       type = [type]
     }
+    // 遍历类型数组
     for (let i = 0; i < type.length && !valid; i++) {
+      //
       const assertedType = assertType(value, type[i])
       expectedTypes.push(assertedType.expectedType || '')
       valid = assertedType.valid
@@ -169,29 +187,45 @@ function assertProp (
     }
   }
 }
-
+// 基本的类型
 const simpleCheckRE = /^(String|Number|Boolean|Function|Symbol)$/
-
+/**
+ * 断言类型
+ * @param {any} value 值
+ * @param {Function} type 类型构造函数
+ */
 function assertType (value: any, type: Function): {
   valid: boolean;
   expectedType: string;
 } {
   let valid
+  // 获取类型名
   const expectedType = getType(type)
+  // 校验类型是否匹配基本的类型
   if (simpleCheckRE.test(expectedType)) {
+    // 获取value的类型
     const t = typeof value
+    // 校验判断类型是否相同
     valid = t === expectedType.toLowerCase()
     // for primitive wrapper objects
+    // 如果不相同，并且是为object类型,为原始包装对象校验 new Number(123)
     if (!valid && t === 'object') {
+      // 重写校验，判断对象类型是否为type的构造器
       valid = value instanceof type
     }
+    // 如果类型为Object
   } else if (expectedType === 'Object') {
+    // 校验是否为对象
     valid = isPlainObject(value)
+    // 如果类型为数组
   } else if (expectedType === 'Array') {
+    // 校验是否为数组
     valid = Array.isArray(value)
   } else {
+    // 其他情况校验是否instanceof
     valid = value instanceof type
   }
+  // 返回校验结果与类型
   return {
     valid,
     expectedType
@@ -204,8 +238,14 @@ function assertType (value: any, type: Function): {
  * across different vms / iframes.
  * 对构造函数使用toString，获取
  */
+/**
+ * 获取构造器的类型
+ * @param {Function} fn 构造器
+ */
 function getType (fn) {
+  // 匹配构造器toString后截取function后的构造器名称
   const match = fn && fn.toString().match(/^\s*function (\w+)/)
+  // 匹配成功获取
   return match ? match[1] : ''
 }
 /**
