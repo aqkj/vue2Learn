@@ -139,9 +139,13 @@ export function createComponent (
   }
 
   // async component
+  // 异步组件
   let asyncFactory
+  // 如果cid未定义
   if (isUndef(Ctor.cid)) { // 判断构造器是否有cid
+    // 获取异步工厂方法
     asyncFactory = Ctor
+    // 解析异步组件
     Ctor = resolveAsyncComponent(asyncFactory, baseCtor)
     if (Ctor === undefined) {
       // return a placeholder node for async component, which is rendered

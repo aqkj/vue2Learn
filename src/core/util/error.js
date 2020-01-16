@@ -32,7 +32,14 @@ export function handleError (err: Error, vm: any, info: string) {
     popTarget()
   }
 }
-
+/**
+ * 调用方法并且拦截错误
+ * @param {function} handler 方法
+ * @param {any} context 调用方法上下文
+ * @param {any} args 传入参数
+ * @param {any} vm vue实例
+ * @param {string} info 提示信息
+ */
 export function invokeWithErrorHandling (
   handler: Function,
   context: any,
@@ -40,16 +47,22 @@ export function invokeWithErrorHandling (
   vm: any,
   info: string
 ) {
+  // 返回的结果
   let res
   try {
+    // 调用方法并且传入执行上下文和参数
     res = args ? handler.apply(context, args) : handler.call(context)
+    // 判断返回结果是否为promise并且非vue
     if (res && !res._isVue && isPromise(res) && !res._handled) {
+      // 通过catch拦截错误
       res.catch(e => handleError(e, vm, info + ` (Promise/async)`))
       // issue #9511
       // avoid catch triggering multiple times when nested calls
+      // 此属性用于防止调用多次catch
       res._handled = true
     }
   } catch (e) {
+    // 执行错误信息
     handleError(e, vm, info)
   }
   return res

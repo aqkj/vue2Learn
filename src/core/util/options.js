@@ -593,6 +593,13 @@ export function mergeOptions (
  * This function is used because child instances need access
  * to assets defined in its ancestor chain.
  */
+/**
+ * 解析资源
+ * @param {object} options 配置
+ * @param {string} type 类型
+ * @param {string} id id
+ * @param {boolean} warnMissing
+ */
 export function resolveAsset (
   options: Object,
   type: string,
@@ -603,20 +610,29 @@ export function resolveAsset (
   if (typeof id !== 'string') {
     return
   }
+  // 获取对应资源
   const assets = options[type]
   // check local registration variations first
+  // 判断资源是否存在，存在则返回
   if (hasOwn(assets, id)) return assets[id]
+  // 将以-分割格式的id进行驼峰格式话
   const camelizedId = camelize(id)
+  // 判断是否存在资源内，存在则返回
   if (hasOwn(assets, camelizedId)) return assets[camelizedId]
+  // 将驼峰语法转换成pascal语法格式
   const PascalCaseId = capitalize(camelizedId)
+  // 判断是否存在，存在则返回
   if (hasOwn(assets, PascalCaseId)) return assets[PascalCaseId]
   // fallback to prototype chain
+  // 获取结果
   const res = assets[id] || assets[camelizedId] || assets[PascalCaseId]
+  // 非生产环境下，如果结果不存在，则报错
   if (process.env.NODE_ENV !== 'production' && warnMissing && !res) {
     warn(
       'Failed to resolve ' + type.slice(0, -1) + ': ' + id,
       options
     )
   }
+  // 返回结果
   return res
 }

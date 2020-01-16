@@ -79,7 +79,7 @@ export function resolveInject (inject: any, vm: Component): ?Object {
         // 不存在则循环获取父级
         source = source.$parent
       }
-      // 如果到最上级的实例了
+      // 如果到最上级的实例了，并且没获取到provide值
       if (!source) {
         // 判断是否存在default属性默认值
         if ('default' in inject[key]) {

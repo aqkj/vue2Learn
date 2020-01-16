@@ -67,100 +67,158 @@ export function initLifecycle (vm: Component) {
   // 设置是否在销毁中
   vm._isBeingDestroyed = false
 }
-
+/**
+ * 生命周期mixin
+ * @param {Vue} Vue vue构造器
+ */
 export function lifecycleMixin (Vue: Class<Component>) {
+  /**
+   * 通过传入的虚拟dom更新真实dom树
+   * @param {VNode} vnode 虚拟dom
+   * @param {boolean} hydrating 目前不知道干啥的
+   */
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
+    // 获取vm实例
     const vm: Component = this
+    // 暂存上一次的eldom树结构
     const prevEl = vm.$el
+    // 获取上一次的虚拟node树结构
     const prevVnode = vm._vnode
+    // 保存上一次的vm实例，并且返回一个方法用于恢复上一次的实例
     const restoreActiveInstance = setActiveInstance(vm)
+    // 设置vnode
     vm._vnode = vnode
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
+    // 如果上一次的vnode不存在，代表其为初始化
     if (!prevVnode) {
       // initial render
+      // 初始化渲染并赋值给$el
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
       // updates
+      // 更新渲染
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
+    // 恢复上一次的vm实例
     restoreActiveInstance()
     // update __vue__ reference
+    // 如果上一次的el dom树存在
     if (prevEl) {
+      // 将vue实例关联清空
       prevEl.__vue__ = null
     }
+    // 如果当前渲染的el dom树存在
     if (vm.$el) {
+      // 设置当前dom树关联vue实例
       vm.$el.__vue__ = vm
     }
     // if parent is an HOC, update its $el as well
+    // 如果父组件为高阶组件，则设置父组件的el为当前实例的el
     if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
       vm.$parent.$el = vm.$el
     }
     // updated hook is called by the scheduler to ensure that children are
     // updated in a parent's updated hook.
   }
-
+  /**
+   * 手动触发更新
+   */
   Vue.prototype.$forceUpdate = function () {
+    // 获取当前实例
     const vm: Component = this
+    // 如果当前实例存在_watcher
     if (vm._watcher) {
+      // 触发依赖收集，并且更新回调
       vm._watcher.update()
     }
   }
-
+  /**
+   * 组件销毁
+   */
   Vue.prototype.$destroy = function () {
+    // 获取当前实例
     const vm: Component = this
+    // 如果已经销毁则不操作
     if (vm._isBeingDestroyed) {
       return
     }
+    // 调用beforeDestory钩子
     callHook(vm, 'beforeDestroy')
+    // 设置_isBeingDestroyed为销毁
     vm._isBeingDestroyed = true
     // remove self from parent
+    // 获取父实例
     const parent = vm.$parent
+    // 如果父实例存在并且父实例没有销毁，并且当前实例非抽象
     if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) {
+      // 将父实例和当前实例的关系移除
       remove(parent.$children, vm)
     }
     // teardown watchers
+    // 移除当前收集的依赖关系，并且将当前watcher移除
     if (vm._watcher) {
       vm._watcher.teardown()
     }
+    // 获取当前实例观察的数量
     let i = vm._watchers.length
+    // 将所有watcher进行移除操作
     while (i--) {
+      // 移除当前收集的依赖关系
       vm._watchers[i].teardown()
     }
     // remove reference from data ob
     // frozen object may not have observer.
+    // 如果当前data存在observe对象
     if (vm._data.__ob__) {
+      // 则将实例count--
       vm._data.__ob__.vmCount--
     }
     // call the last hook...
+    // 设置_isDestroyed为true
     vm._isDestroyed = true
     // invoke destroy hooks on current rendered tree
+    // 销毁vnode
     vm.__patch__(vm._vnode, null)
     // fire destroyed hook
+    // 调用destoryed钩子
     callHook(vm, 'destroyed')
     // turn off all instance listeners.
+    // 移除所有订阅事件
     vm.$off()
     // remove __vue__ reference
+    // 移除当前真实dom树的依赖关系
     if (vm.$el) {
       vm.$el.__vue__ = null
     }
     // release circular reference (#6759)
+    // 移除$vnode的parent
     if (vm.$vnode) {
       vm.$vnode.parent = null
     }
   }
 }
-
+/**
+ * 挂载组件
+ * @param {object} vm vm实例
+ * @param {object} el el元素
+ * @param {*} hydrating
+ */
 export function mountComponent (
   vm: Component,
   el: ?Element,
   hydrating?: boolean
 ): Component {
+  // 设置el组件为获取el元素
   vm.$el = el
+  // 如果不存在render方法
   if (!vm.$options.render) {
+    // 设置render方法为创建空虚拟弄的的方法
     vm.$options.render = createEmptyVNode
+    // 非生产环境
     if (process.env.NODE_ENV !== 'production') {
       /* istanbul ignore if */
+      // 如果template存在，并且不为#， 或者el存在,则报错
       if ((vm.$options.template && vm.$options.template.charAt(0) !== '#') ||
         vm.$options.el || el) {
         warn(
@@ -177,29 +235,37 @@ export function mountComponent (
       }
     }
   }
+  // 调用钩子beforeMount
   callHook(vm, 'beforeMount')
-
+  // 订阅更新组件方法
   let updateComponent
   /* istanbul ignore if */
+  // 非生产环境，并且开启了性能调试
   if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
     updateComponent = () => {
+      // 获取当前实例名称
       const name = vm._name
+      // 获取当前uid
       const id = vm._uid
       const startTag = `vue-perf-start:${id}`
       const endTag = `vue-perf-end:${id}`
 
       mark(startTag)
+      // 获取当前vnode树
       const vnode = vm._render()
       mark(endTag)
       measure(`vue ${name} render`, startTag, endTag)
 
       mark(startTag)
+      // 传递vnode生产真实dom树
       vm._update(vnode, hydrating)
       mark(endTag)
       measure(`vue ${name} patch`, startTag, endTag)
     }
   } else {
+    // 更新组件方法
     updateComponent = () => {
+      // 获取虚拟node树，更新真实dom树
       vm._update(vm._render(), hydrating)
     }
   }
@@ -207,8 +273,10 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+  // 创建watcher对象，传递updateComponent为getter，在创建vnode时进行依赖收集
   new Watcher(vm, updateComponent, noop, {
     before () {
+      // 调用beforeUpdate钩子
       if (vm._isMounted && !vm._isDestroyed) {
         callHook(vm, 'beforeUpdate')
       }
@@ -218,10 +286,14 @@ export function mountComponent (
 
   // manually mounted instance, call mounted on self
   // mounted is called for render-created child components in its inserted hook
+  // 替换$vnode为空
   if (vm.$vnode == null) {
+    // 设置_isMounte为true
     vm._isMounted = true
+    // 调用钩子mounted
     callHook(vm, 'mounted')
   }
+  // 返回vm实例
   return vm
 }
 

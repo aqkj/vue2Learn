@@ -48,7 +48,7 @@ export default class Watcher {
    * @param {string|function} expOrFn
    * @param {function} cb 回调
    * @param {object} options 配置
-   * @param {boolean} isRenderWatcher
+   * @param {boolean} isRenderWatcher 是否为负责渲染的watcher
    */
   constructor (
     vm: Component,

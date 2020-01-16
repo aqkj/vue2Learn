@@ -4,10 +4,10 @@ import { def } from 'core/util/lang'
 import { normalizeChildren } from 'core/vdom/helpers/normalize-children'
 import { emptyObject } from 'shared/util'
 /**
- * 规范化插槽
- * @param {Record<string, Function>} slots 插槽
- * @param {*} normalSlots
- * @param {*} prevSlots
+ * 规范化作用域插槽
+ * @param {Record<string, Function>} slots 新的作用域插槽
+ * @param {*} normalSlots 普通插槽
+ * @param {*} prevSlots 之前的作用域插槽
  */
 export function normalizeScopedSlots (
   slots: { [key: string]: Function } | void,
@@ -15,9 +15,13 @@ export function normalizeScopedSlots (
   prevSlots?: { [key: string]: Function } | void
 ): any {
   let res
+  // 判断是否存在普通插槽
   const hasNormalSlots = Object.keys(normalSlots).length > 0
+  // 是否稳定，目前不知道干啥的
   const isStable = slots ? !!slots.$stable : !hasNormalSlots
+  // 获取slots的key
   const key = slots && slots.$key
+  // 判断新的作用域插槽是否存在
   if (!slots) {
     res = {}
   } else if (slots._normalized) {

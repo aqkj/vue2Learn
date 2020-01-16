@@ -146,6 +146,7 @@ export function _createElement (
         config.parsePlatformTagName(tag), data, children,
         undefined, undefined, context
       )
+      // 如果未订阅data或者.pre属性不存在，并且组件上下文内有定义，则获取对应的构造函数
     } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) { // 判断并且获取组件构造方法
       // component
       // 是组件的情况下创建组件
