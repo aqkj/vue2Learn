@@ -8,5 +8,8 @@ import platformModules from 'web/runtime/modules/index'
 // the directive module should be applied last, after all
 // built-in modules have been applied.
 const modules = platformModules.concat(baseModules)
-
+/**
+ * 补丁方法
+ * 用于将vnode转换成真实dom
+ */
 export const patch: Function = createPatchFunction({ nodeOps, modules })

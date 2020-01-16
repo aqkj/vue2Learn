@@ -71,7 +71,7 @@ export function createFnInvoker (fns: Function | Array<Function>, vm: ?Component
   return invoker
 }
 /**
- * 更新实例
+ * 更新事件监听对象
  * @param {object} on 新监听
  * @param {object} oldOn 旧监听
  * @param {function} add 添加事件方法

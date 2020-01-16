@@ -29,7 +29,7 @@ import {
 } from '../util/index'
 
 export const emptyNode = new VNode('', {}, [])
-
+// 钩子数组
 const hooks = ['create', 'activate', 'update', 'remove', 'destroy']
 
 function sameVnode (a, b) {
@@ -66,26 +66,41 @@ function createKeyToOldIdx (children, beginIdx, endIdx) {
   }
   return map
 }
-
+/**
+ * 创建补丁方法
+ * @param {object} backend 工具操作方法对象
+ */
 export function createPatchFunction (backend) {
   let i, j
+  // 存储回调
   const cbs = {}
-
+  // 获取传入参数
   const { modules, nodeOps } = backend
-
+  // 遍历钩子数组
   for (i = 0; i < hooks.length; ++i) {
+    // 初始化钩子回调方法数组
     cbs[hooks[i]] = []
+    // 遍历模块方法
     for (j = 0; j < modules.length; ++j) {
+      // 如果模块对应方法的钩子存在
       if (isDef(modules[j][hooks[i]])) {
+        // 插入到对应钩子的回调方法数组中
         cbs[hooks[i]].push(modules[j][hooks[i]])
       }
     }
   }
-
+  /**
+   * 空元素
+   * @param {Node} elm 元素
+   */
   function emptyNodeAt (elm) {
     return new VNode(nodeOps.tagName(elm).toLowerCase(), {}, [], undefined, elm)
   }
-
+  /**
+   * 创建删除回调
+   * @param {Node} childElm 子元素
+   * @param {any} listeners
+   */
   function createRmCb (childElm, listeners) {
     function remove () {
       if (--remove.listeners === 0) {
@@ -95,15 +110,25 @@ export function createPatchFunction (backend) {
     remove.listeners = listeners
     return remove
   }
-
+  /**
+   * 移除Node
+   * @param {Node} el 元素
+   */
   function removeNode (el) {
+    // 获取父级元素
     const parent = nodeOps.parentNode(el)
     // element may have already been removed due to v-html / v-text
+    // 如果父级存在
     if (isDef(parent)) {
+      // 移除当前元素
       nodeOps.removeChild(parent, el)
     }
   }
-
+  /**
+   * 是否为未知的元素
+   * @param {VNode} vnode 虚拟node
+   * @param {*} inVPre
+   */
   function isUnknownElement (vnode, inVPre) {
     return (
       !inVPre &&
@@ -121,7 +146,16 @@ export function createPatchFunction (backend) {
   }
 
   let creatingElmInVPre = 0
-
+  /**
+   * 创建元素
+   * @param {VNode} vnode 虚拟node
+   * @param {any[]} insertedVnodeQueue 插入vnode序列
+   * @param {*} parentElm 父元素
+   * @param {*} refElm
+   * @param {*} nested
+   * @param {*} ownerArray
+   * @param {*} index
+   */
   function createElm (
     vnode,
     insertedVnodeQueue,
@@ -131,6 +165,7 @@ export function createPatchFunction (backend) {
     ownerArray,
     index
   ) {
+    // 判断虚拟node上是否存在elm元素
     if (isDef(vnode.elm) && isDef(ownerArray)) {
       // This vnode was used in a previous render!
       // now it's used as a new node, overwriting its elm would cause
@@ -139,8 +174,9 @@ export function createPatchFunction (backend) {
       // associated DOM element for it.
       vnode = ownerArray[index] = cloneVNode(vnode)
     }
-
+    // 如果nested不存则为true
     vnode.isRootInsert = !nested // for transition enter check
+    // 判断创建组件
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return
     }
@@ -206,12 +242,23 @@ export function createPatchFunction (backend) {
       insert(parentElm, vnode.elm, refElm)
     }
   }
-
+  /**
+   * 创建组件
+   * @param {VNode} vnode 虚拟node
+   * @param {any[]} insertedVnodeQueue 插入的虚拟node队列
+   * @param {*} parentElm
+   * @param {*} refElm
+   */
   function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
+    // 获取vnode的data
     let i = vnode.data
+    // 判断是否存在
     if (isDef(i)) {
+      // 判断是否有组件实例，并且存在keepAlive
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
+      // 判断是否存在init钩子
       if (isDef(i = i.hook) && isDef(i = i.init)) {
+        // 存在则调用钩子
         i(vnode, false /* hydrating */)
       }
       // after calling the init hook, if the vnode is a child component
@@ -343,15 +390,24 @@ export function createPatchFunction (backend) {
       createElm(vnodes[startIdx], insertedVnodeQueue, parentElm, refElm, false, vnodes, startIdx)
     }
   }
-
+  /**
+   * 调用销毁钩子
+   * @param {VNode} vnode 虚拟node
+   */
   function invokeDestroyHook (vnode) {
     let i, j
+    // 获取vnode的data
     const data = vnode.data
+    // 判断data是否存在
     if (isDef(data)) {
+      // 判断组件钩子是否存在，并且是否存在destory钩子，存在则调用
       if (isDef(i = data.hook) && isDef(i = i.destroy)) i(vnode)
+      // 遍历销毁状态回调，并且触发回调数组
       for (i = 0; i < cbs.destroy.length; ++i) cbs.destroy[i](vnode)
     }
+    // 如果当前虚拟node的子元素存在
     if (isDef(i = vnode.children)) {
+      // 遍历自元素，递归销毁
       for (j = 0; j < vnode.children.length; ++j) {
         invokeDestroyHook(vnode.children[j])
       }
@@ -696,19 +752,28 @@ export function createPatchFunction (backend) {
       return node.nodeType === (vnode.isComment ? 8 : 3)
     }
   }
-
+  /**
+   * 返回patch补丁方法
+   * @param {VNode} 旧的虚拟node
+   * @param {VNode} 新的虚拟node
+   */
   return function patch (oldVnode, vnode, hydrating, removeOnly) {
+    // 如果新的vnode为空
     if (isUndef(vnode)) {
+      // 如果旧的vnode不为空，则调用销毁钩子
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode)
       return
     }
-
+    // 是否为初始化补丁
     let isInitialPatch = false
+    // 插入的虚拟node队列
     const insertedVnodeQueue = []
-
+    // 如果旧vnode为undefined，则代表其为初始化
     if (isUndef(oldVnode)) {
       // empty mount (likely as component), create new root element
+      // 初始化补丁为true
       isInitialPatch = true
+      // 创建元素
       createElm(vnode, insertedVnodeQueue)
     } else {
       const isRealElement = isDef(oldVnode.nodeType)

@@ -34,16 +34,25 @@ import {
 
 // inline hooks to be invoked on component VNodes during patch
 const componentVNodeHooks = { // 组件各阶段钩子
+  /**
+   * 初始化组件
+   * @param {VNode} vnode 虚拟node
+   * @param {*} hydrating
+   */
   init (vnode: VNodeWithData, hydrating: boolean): ?boolean {
+    // 判断组件实例是否存在，并且未销毁，并且存在keepAlive
     if (
       vnode.componentInstance &&
       !vnode.componentInstance._isDestroyed &&
       vnode.data.keepAlive
     ) {
       // kept-alive components, treat as a patch
+      // 获取挂载node
       const mountedNode: any = vnode // work around flow
+      // 调用prepatch钩子，传入虚拟node
       componentVNodeHooks.prepatch(mountedNode, mountedNode)
     } else {
+      // 初始化，创建组件实例
       const child = vnode.componentInstance = createComponentInstanceForVnode(
         vnode,
         activeInstance
@@ -51,10 +60,17 @@ const componentVNodeHooks = { // 组件各阶段钩子
       child.$mount(hydrating ? vnode.elm : undefined, hydrating)
     }
   },
-
+  /**
+   * 预补丁钩子
+   * @param {VNode} oldVnode 旧的VNode
+   * @param {VNode} vnode 新VNode
+   */
   prepatch (oldVnode: MountedComponentVNode, vnode: MountedComponentVNode) {
+    // 获取组件配置
     const options = vnode.componentOptions
+    // 获取组件实例
     const child = vnode.componentInstance = oldVnode.componentInstance
+    // 更新子组件
     updateChildComponent(
       child,
       options.propsData, // updated props
@@ -83,19 +99,27 @@ const componentVNodeHooks = { // 组件各阶段钩子
       }
     }
   },
-
+  /**
+   * 销毁钩子
+   * @param {*} vnode
+   */
   destroy (vnode: MountedComponentVNode) {
+    // 获取虚拟组件实例
     const { componentInstance } = vnode
+    // 如果不在销毁状态
     if (!componentInstance._isDestroyed) {
+      // 并且非缓存组件
       if (!vnode.data.keepAlive) {
+        // 调用组件销毁钩子
         componentInstance.$destroy()
       } else {
+        // 如果为缓存则停用此当前实例树
         deactivateChildComponent(componentInstance, true /* direct */)
       }
     }
   }
 }
-
+// 合并的钩子名数组
 const hooksToMerge = Object.keys(componentVNodeHooks)
 /**
  * 创建组件
@@ -165,7 +189,7 @@ export function createComponent (
 
   // resolve constructor options in case global mixins are applied after
   // component constructor creation
-  resolveConstructorOptions(Ctor) // 解析构造器配置，用于更新配置
+  resolveConstructorOptions(Ctor) // 解析构造器配置，用于获取Vue构造器配置，并更新配置
 
   // transform component v-model data into props & events
   if (isDef(data.model)) { // v-model语法糖解析
@@ -173,7 +197,7 @@ export function createComponent (
   }
 
   // extract props
-  // 提取属性
+  // 提取传入组件的属性
   const propsData = extractPropsFromVNodeData(data, Ctor, tag) // 提取属性
 
   // functional component
@@ -226,11 +250,16 @@ export function createComponent (
   // 返回vnode对象
   return vnode
 }
-
+/**
+ * 为虚拟node创建组件实例
+ * @param {VNode} vnode 虚拟node
+ * @param {*} parent
+ */
 export function createComponentInstanceForVnode (
   vnode: any, // we know it's MountedComponentVNode but flow doesn't
   parent: any, // activeInstance in lifecycle state
 ): Component {
+  // 组件配置
   const options: InternalComponentOptions = {
     _isComponent: true,
     _parentVnode: vnode,
@@ -238,15 +267,19 @@ export function createComponentInstanceForVnode (
   }
   // check inline-template render functions
   const inlineTemplate = vnode.data.inlineTemplate
+  // 如果是否存在
   if (isDef(inlineTemplate)) {
+    // 存在则获取render方法
     options.render = inlineTemplate.render
+    // 获取静态render方法
     options.staticRenderFns = inlineTemplate.staticRenderFns
   }
+  // 调用组件构造器，返回实例
   return new vnode.componentOptions.Ctor(options)
 }
 /**
  * 安装组件钩子
- * @param {*} data
+ * @param {Object} data 组件data
  */
 function installComponentHooks (data: VNodeData) {
   // 获取钩子

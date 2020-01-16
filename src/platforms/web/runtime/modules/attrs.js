@@ -17,8 +17,13 @@ import {
   isFalsyAttrValue,
   convertEnumeratedValue
 } from 'web/util/index'
-
+/**
+ * 更新元素属性
+ * @param {object} oldVnode 旧的vnode
+ * @param object vnode 新vnode
+ */
 function updateAttrs (oldVnode: VNodeWithData, vnode: VNodeWithData) {
+  // 获取组件配置
   const opts = vnode.componentOptions
   if (isDef(opts) && opts.Ctor.options.inheritAttrs === false) {
     return
@@ -58,8 +63,14 @@ function updateAttrs (oldVnode: VNodeWithData, vnode: VNodeWithData) {
     }
   }
 }
-
+/**
+ * 设置属性
+ * @param {Element} el 元素
+ * @param {string} key 属性名称
+ * @param {string} value 属性值
+ */
 function setAttr (el: Element, key: string, value: any) {
+  // 判断
   if (el.tagName.indexOf('-') > -1) {
     baseSetAttr(el, key, value)
   } else if (isBooleanAttr(key)) {

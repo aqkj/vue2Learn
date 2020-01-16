@@ -296,7 +296,14 @@ export function mountComponent (
   // 返回vm实例
   return vm
 }
-
+/**
+ * 更新子组件
+ * @param {object} vm 组件实例
+ * @param {object} propsData 传入参数
+ * @param {object} listeners 监听事件
+ * @param {object} parentVnode 父级虚拟node
+ * @param {VNode[]} renderChildren 子虚拟node
+ */
 export function updateChildComponent (
   vm: Component,
   propsData: ?Object,
@@ -304,7 +311,9 @@ export function updateChildComponent (
   parentVnode: MountedComponentVNode,
   renderChildren: ?Array<VNode>
 ) {
+  // 非生产环境
   if (process.env.NODE_ENV !== 'production') {
+    // 更新子组件中
     isUpdatingChildComponent = true
   }
 
@@ -314,64 +323,95 @@ export function updateChildComponent (
   // check if there are dynamic scopedSlots (hand-written or compiled but with
   // dynamic slot names). Static scoped slots compiled from template has the
   // "$stable" marker.
+  // 获取父Vnode的data的作用域插槽
   const newScopedSlots = parentVnode.data.scopedSlots
+  // 获取旧的作用域插槽
   const oldScopedSlots = vm.$scopedSlots
+  // 判断是否存在动态作用域插槽
   const hasDynamicScopedSlot = !!(
+    // 新插槽存在，并且非$stable
     (newScopedSlots && !newScopedSlots.$stable) ||
+    // 旧插槽为等于空对象，并且非$stable
     (oldScopedSlots !== emptyObject && !oldScopedSlots.$stable) ||
+    // 判断新插槽存在，并且新两者key不相同
     (newScopedSlots && vm.$scopedSlots.$key !== newScopedSlots.$key)
   )
 
   // Any static slot children from the parent may have changed during parent's
   // update. Dynamic scoped slots may also have changed. In such cases, a forced
   // update is necessary to ensure correctness.
+  // 是否需要触发更新
   const needsForceUpdate = !!(
+    // 存在子node数组
     renderChildren ||               // has new static slots
+    // 旧子元素数组
     vm.$options._renderChildren ||  // has old static slots
+    // 动态作用域插槽
     hasDynamicScopedSlot
   )
-
+  // 设置父VNode
   vm.$options._parentVnode = parentVnode
+  // 设置$vnode元素
   vm.$vnode = parentVnode // update vm's placeholder node without re-render
-
+  // 设置子vnode元素的父vnode
   if (vm._vnode) { // update child tree's parent
     vm._vnode.parent = parentVnode
   }
+  // 设置子元素数组
   vm.$options._renderChildren = renderChildren
 
   // update $attrs and $listeners hash
   // these are also reactive so they may trigger child update if the child
   // used them during render
+  // 设置父的attr属性
   vm.$attrs = parentVnode.data.attrs || emptyObject
+  // 设置监听事件
   vm.$listeners = listeners || emptyObject
 
   // update props
+  // 存在propsData,存在options.props配置
   if (propsData && vm.$options.props) {
+    // 关闭observe观察
     toggleObserving(false)
+    // 获取props
     const props = vm._props
+    // 获取props属性名列表
     const propKeys = vm.$options._propKeys || []
+    // 遍历属性名
     for (let i = 0; i < propKeys.length; i++) {
+      // 获取属性名称
       const key = propKeys[i]
+      // 获取配置的属性
       const propOptions: any = vm.$options.props // wtf flow?
+      // 校验prop
       props[key] = validateProp(key, propOptions, propsData, vm)
     }
+    // 开启observe观察
     toggleObserving(true)
     // keep a copy of raw propsData
+    // 设置propsData
     vm.$options.propsData = propsData
   }
 
   // update listeners
+  // 获取事件监听对象
   listeners = listeners || emptyObject
+  // 获取旧的事件监听对象
   const oldListeners = vm.$options._parentListeners
+  // 设置为新的事件监听对象
   vm.$options._parentListeners = listeners
+  // 更新组件事件
   updateComponentListeners(vm, listeners, oldListeners)
 
   // resolve slots + force update if has children
+  // 如果 需要触发更新
   if (needsForceUpdate) {
+    // 解析更新钩子
     vm.$slots = resolveSlots(renderChildren, parentVnode.context)
+    // 触发更新
     vm.$forceUpdate()
   }
-
+  // 非生产环境
   if (process.env.NODE_ENV !== 'production') {
     isUpdatingChildComponent = false
   }
@@ -401,19 +441,29 @@ export function activateChildComponent (vm: Component, direct?: boolean) {
     callHook(vm, 'activated')
   }
 }
-
+/**
+ * 停用子组件
+ * @param {object} vm vue实例
+ * @param {*} direct
+ */
 export function deactivateChildComponent (vm: Component, direct?: boolean) {
   if (direct) {
+    // 停用组件条件
     vm._directInactive = true
     if (isInInactiveTree(vm)) {
       return
     }
   }
+  // 判断是活跃的，则设置为非活跃
   if (!vm._inactive) {
+    // 设置为非活跃
     vm._inactive = true
+    // 遍历当前实例子实例
     for (let i = 0; i < vm.$children.length; i++) {
+      //递归停用子组件
       deactivateChildComponent(vm.$children[i])
     }
+    // 触发停用钩子
     callHook(vm, 'deactivated')
   }
 }
