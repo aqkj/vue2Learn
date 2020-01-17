@@ -79,20 +79,29 @@ const componentVNodeHooks = { // 组件各阶段钩子
       options.children // new children
     )
   },
-
+  /**
+   * 插入钩子
+   * @param {VNode} vnode 虚拟node
+   */
   insert (vnode: MountedComponentVNode) {
+    // 获取组件上下文和实例
     const { context, componentInstance } = vnode
+    // 如果组件并未挂载
     if (!componentInstance._isMounted) {
+      // 设置挂载
       componentInstance._isMounted = true
+      // 调用挂载钩子
       callHook(componentInstance, 'mounted')
     }
+    // 判断组件是否keepAlive
     if (vnode.data.keepAlive) {
+      // 判断上下文是否挂载
       if (context._isMounted) {
         // vue-router#1212
         // During updates, a kept-alive component's child components may
         // change, so directly walking the tree here may call activated hooks
         // on incorrect children. Instead we push them into a queue which will
-        // be processed after the whole patch process ended.
+        // be processed after the whole patch process ended.s
         queueActivatedComponent(componentInstance)
       } else {
         activateChildComponent(componentInstance, true /* direct */)

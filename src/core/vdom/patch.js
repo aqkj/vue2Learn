@@ -31,8 +31,13 @@ import {
 export const emptyNode = new VNode('', {}, [])
 // 钩子数组
 const hooks = ['create', 'activate', 'update', 'remove', 'destroy']
-
+/**
+ * 判断vnode是否相同
+ * @param {VNode} a 虚拟node
+ * @param {Vnode} b 虚拟node
+ */
 function sameVnode (a, b) {
+  // 判断key是否相同，并且tag相同，是否为注释，都定义了data
   return (
     a.key === b.key && (
       (
@@ -48,12 +53,20 @@ function sameVnode (a, b) {
     )
   )
 }
-
+/**
+ * 判断input类型是否相同
+ * @param {Vnode} a
+ * @param {VNode} b
+ */
 function sameInputType (a, b) {
+  // 如果标签不是input则返回true
   if (a.tag !== 'input') return true
   let i
+  // 获取input的type类型
   const typeA = isDef(i = a.data) && isDef(i = i.attrs) && i.type
+  // 获取input的type类型
   const typeB = isDef(i = b.data) && isDef(i = i.attrs) && i.type
+  // 判断类型是否相同，或者都是内置的type
   return typeA === typeB || isTextInputType(typeA) && isTextInputType(typeB)
 }
 
@@ -151,7 +164,7 @@ export function createPatchFunction (backend) {
    * @param {VNode} vnode 虚拟node
    * @param {any[]} insertedVnodeQueue 插入vnode序列
    * @param {*} parentElm 父元素
-   * @param {*} refElm
+   * @param {*} refElm 参考元素
    * @param {*} nested
    * @param {*} ownerArray
    * @param {*} index
@@ -176,19 +189,26 @@ export function createPatchFunction (backend) {
     }
     // 如果nested不存则为true
     vnode.isRootInsert = !nested // for transition enter check
-    // 判断创建组件
+    // 创建组件成功返回true
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return
     }
-
+    // 获取虚拟node的数据
     const data = vnode.data
+    // 获取子元素列表
     const children = vnode.children
+    // 获取标签名
     const tag = vnode.tag
+    // 判断标签名称是否存在
     if (isDef(tag)) {
+      // 非生产环境
       if (process.env.NODE_ENV !== 'production') {
+        // 判断是否存在pre
         if (data && data.pre) {
+          // ++
           creatingElmInVPre++
         }
+        // 判断是否为未知的元素，则报错
         if (isUnknownElement(vnode, creatingElmInVPre)) {
           warn(
             'Unknown custom element: <' + tag + '> - did you ' +
@@ -198,10 +218,11 @@ export function createPatchFunction (backend) {
           )
         }
       }
-
+      // 创建元素，传递给elm属性
       vnode.elm = vnode.ns
         ? nodeOps.createElementNS(vnode.ns, tag)
         : nodeOps.createElement(tag, vnode)
+      // 设置作用域
       setScope(vnode)
 
       /* istanbul ignore if */
@@ -224,20 +245,28 @@ export function createPatchFunction (backend) {
           insert(parentElm, vnode.elm, refElm)
         }
       } else {
+        // 创建子元素
         createChildren(vnode, children, insertedVnodeQueue)
+        // 判断data是否存在
         if (isDef(data)) {
+          // 存在则调用createHook
           invokeCreateHooks(vnode, insertedVnodeQueue)
         }
+        // 插入到元素中
         insert(parentElm, vnode.elm, refElm)
       }
 
       if (process.env.NODE_ENV !== 'production' && data && data.pre) {
+        // 非生产环境，并且pre则--
         creatingElmInVPre--
       }
-    } else if (isTrue(vnode.isComment)) {
+    } else if (isTrue(vnode.isComment)) { // 判断是否为注释
+      // 创建注释元素
       vnode.elm = nodeOps.createComment(vnode.text)
+      // 插入到元素中
       insert(parentElm, vnode.elm, refElm)
     } else {
+      // 其他情况创建文本元素，插入到元素内
       vnode.elm = nodeOps.createTextNode(vnode.text)
       insert(parentElm, vnode.elm, refElm)
     }
@@ -246,8 +275,8 @@ export function createPatchFunction (backend) {
    * 创建组件
    * @param {VNode} vnode 虚拟node
    * @param {any[]} insertedVnodeQueue 插入的虚拟node队列
-   * @param {*} parentElm
-   * @param {*} refElm
+   * @param {Node} parentElm 父元素
+   * @param {Node} refElm 参考元素
    */
   function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
     // 获取vnode的data
@@ -258,55 +287,86 @@ export function createPatchFunction (backend) {
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
       // 判断是否存在init钩子
       if (isDef(i = i.hook) && isDef(i = i.init)) {
-        // 存在则调用钩子
+        // 存在则调用init钩子
         i(vnode, false /* hydrating */)
       }
       // after calling the init hook, if the vnode is a child component
       // it should've created a child instance and mounted it. the child
       // component also has set the placeholder vnode's elm.
       // in that case we can just return the element and be done.
+      // 判断是否存在实例
       if (isDef(vnode.componentInstance)) {
+        // 初始化组件
         initComponent(vnode, insertedVnodeQueue)
+        // 插入元素到parent
         insert(parentElm, vnode.elm, refElm)
+        // 判断是否为isReactivated
         if (isTrue(isReactivated)) {
+          // 重新启用组件
           reactivateComponent(vnode, insertedVnodeQueue, parentElm, refElm)
         }
+        // 返回true
         return true
       }
     }
   }
-
+  /**
+   * 初始化组件
+   * @param {VNode} vnode 虚拟node
+   * @param {any[]} insertedVnodeQueue 插入的虚拟node队列
+   */
   function initComponent (vnode, insertedVnodeQueue) {
+    // 判断是否在插入中
     if (isDef(vnode.data.pendingInsert)) {
+      // 插入队列
       insertedVnodeQueue.push.apply(insertedVnodeQueue, vnode.data.pendingInsert)
+      //  设置为空
       vnode.data.pendingInsert = null
     }
+    // 获取组件实例下的真实node
     vnode.elm = vnode.componentInstance.$el
+    // 判断是否存在_vnode,并且有标签
     if (isPatchable(vnode)) {
+      // 调用create钩子
       invokeCreateHooks(vnode, insertedVnodeQueue)
+      // 设置作用域
       setScope(vnode)
     } else {
       // empty component root.
       // skip all element-related modules except for ref (#3455)
       registerRef(vnode)
       // make sure to invoke the insert hook
+      // 插入insertHook队列
       insertedVnodeQueue.push(vnode)
     }
   }
-
+  /**
+   * 激活组件
+   * @param {VNode} vnode 虚拟node
+   * @param {any[]} insertedVnodeQueue 插入的虚拟node队列
+   * @param {Node} parentElm 父元素
+   * @param {Node} refElm 参考元素
+   */
   function reactivateComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
     let i
     // hack for #4339: a reactivated component with inner transition
     // does not trigger because the inner node's created hooks are not called
     // again. It's not ideal to involve module-specific logic in here but
     // there doesn't seem to be a better way to do it.
+    // 获取元素
     let innerNode = vnode
+    // 遍历循环
     while (innerNode.componentInstance) {
+      // 获取内部的vnode树
       innerNode = innerNode.componentInstance._vnode
+      // 判断是否存在data，并且存在transition
       if (isDef(i = innerNode.data) && isDef(i = i.transition)) {
+        // 获取activate钩子下的构造函数列表
         for (i = 0; i < cbs.activate.length; ++i) {
+          // 调用钩子
           cbs.activate[i](emptyNode, innerNode)
         }
+        // 插入到队列
         insertedVnodeQueue.push(innerNode)
         break
       }
@@ -315,28 +375,49 @@ export function createPatchFunction (backend) {
     // a reactivated keep-alive component doesn't insert itself
     insert(parentElm, vnode.elm, refElm)
   }
-
+  /**
+   * 插入
+   * @param {object} parent
+   * @param {*} elm
+   * @param {*} ref
+   */
   function insert (parent, elm, ref) {
+    // 判断父级是否存在
     if (isDef(parent)) {
+      // 判断ref是否存在
       if (isDef(ref)) {
+        // 判断ref的parent是否跟parent相同
         if (nodeOps.parentNode(ref) === parent) {
+          // 插入到对应的ref之前
           nodeOps.insertBefore(parent, elm, ref)
         }
       } else {
+        // 插入
         nodeOps.appendChild(parent, elm)
       }
     }
   }
-
+  /**
+   * 创建子元素
+   * @param {VNode} vnode 虚拟bode
+   * @param {VNode[]} children 子虚拟node
+   * @param {any[]} insertedVnodeQueue 插入的队列
+   */
   function createChildren (vnode, children, insertedVnodeQueue) {
+    // 判断是否为数组
     if (Array.isArray(children)) {
+      // 非生产环境
       if (process.env.NODE_ENV !== 'production') {
+        // 检查重复的key
         checkDuplicateKeys(children)
       }
+      // 遍历子元素
       for (let i = 0; i < children.length; ++i) {
+        // 调用创建元素方法
         createElm(children[i], insertedVnodeQueue, vnode.elm, null, true, children, i)
       }
-    } else if (isPrimitive(vnode.text)) {
+    } else if (isPrimitive(vnode.text)) { // 判断是否为原始类型
+      // 转换成string并创建text节点，插入到元素内
       nodeOps.appendChild(vnode.elm, nodeOps.createTextNode(String(vnode.text)))
     }
   }
@@ -347,14 +428,24 @@ export function createPatchFunction (backend) {
     }
     return isDef(vnode.tag)
   }
-
+  /**
+   * 创建钩子
+   * @param {VNode} vnode 虚拟node
+   * @param {any[]} insertedVnodeQueue 插入的队列
+   */
   function invokeCreateHooks (vnode, insertedVnodeQueue) {
+    // 遍历创建回调数组
     for (let i = 0; i < cbs.create.length; ++i) {
+      // 调用创建回调
       cbs.create[i](emptyNode, vnode)
     }
+    // 获取钩子
     i = vnode.data.hook // Reuse variable
+    // 判断钩子是否存在
     if (isDef(i)) {
+      // 判断是否存在创建钩子
       if (isDef(i.create)) i.create(emptyNode, vnode)
+      // 判断是否存在插入钩子
       if (isDef(i.insert)) insertedVnodeQueue.push(vnode)
     }
   }
@@ -362,16 +453,24 @@ export function createPatchFunction (backend) {
   // set scope id attribute for scoped CSS.
   // this is implemented as a special case to avoid the overhead
   // of going through the normal attribute patching process.
+  /**
+   * 设置作用域
+   * @param {VNode} vnode 虚拟node
+   */
   function setScope (vnode) {
     let i
+    // 获取scopeId
     if (isDef(i = vnode.fnScopeId)) {
+      // 设置样式scope
       nodeOps.setStyleScope(vnode.elm, i)
     } else {
       let ancestor = vnode
+      // 遍历vnode，如果当前vnode不存在scopeId则遍历获取父级的scopeId
       while (ancestor) {
         if (isDef(i = ancestor.context) && isDef(i = i.$options._scopeId)) {
           nodeOps.setStyleScope(vnode.elm, i)
         }
+        // 获取父级
         ancestor = ancestor.parent
       }
     }
@@ -384,7 +483,15 @@ export function createPatchFunction (backend) {
       nodeOps.setStyleScope(vnode.elm, i)
     }
   }
-
+  /**
+   * 添加vnode
+   * @param {*} parentElm
+   * @param {*} refElm
+   * @param {*} vnodes
+   * @param {*} startIdx
+   * @param {*} endIdx
+   * @param {*} insertedVnodeQueue
+   */
   function addVnodes (parentElm, refElm, vnodes, startIdx, endIdx, insertedVnodeQueue) {
     for (; startIdx <= endIdx; ++startIdx) {
       createElm(vnodes[startIdx], insertedVnodeQueue, parentElm, refElm, false, vnodes, startIdx)
@@ -456,32 +563,54 @@ export function createPatchFunction (backend) {
       removeNode(vnode.elm)
     }
   }
-
+  /**
+   * 更新自元素
+   * @param {Node} parentElm 父元素
+   * @param {*} oldCh
+   * @param {*} newCh
+   * @param {*} insertedVnodeQueue
+   * @param {*} removeOnly
+   */
   function updateChildren (parentElm, oldCh, newCh, insertedVnodeQueue, removeOnly) {
+    // 旧开始位置
     let oldStartIdx = 0
+    // 新开始位置
     let newStartIdx = 0
+    // 获取旧结束位置
     let oldEndIdx = oldCh.length - 1
+    // 获取旧的开始vnode
     let oldStartVnode = oldCh[0]
+    // 旧结束 vnode
     let oldEndVnode = oldCh[oldEndIdx]
+    // 新的结束位置
     let newEndIdx = newCh.length - 1
+    // 新的开始vnode
     let newStartVnode = newCh[0]
+    // 新的结束vnode
     let newEndVnode = newCh[newEndIdx]
     let oldKeyToIdx, idxInOld, vnodeToMove, refElm
 
     // removeOnly is a special flag used only by <transition-group>
     // to ensure removed elements stay in correct relative positions
     // during leaving transitions
+    // 非删除，则canmove
     const canMove = !removeOnly
-
+    // 非生产环境
     if (process.env.NODE_ENV !== 'production') {
+      // 检查相同的key
       checkDuplicateKeys(newCh)
     }
-
+    // 遍历开始
     while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+      // 判断旧开始vnode是否不存在
       if (isUndef(oldStartVnode)) {
+        // 不存在则++,获取下一个位置的vnode
         oldStartVnode = oldCh[++oldStartIdx] // Vnode has been moved left
+        // 判断旧结束vnode是否存在
       } else if (isUndef(oldEndVnode)) {
+        // 不存在则--,并且更新oldEndVnode
         oldEndVnode = oldCh[--oldEndIdx]
+        // 判断旧开始vnode是新开始vnode是否相同
       } else if (sameVnode(oldStartVnode, newStartVnode)) {
         patchVnode(oldStartVnode, newStartVnode, insertedVnodeQueue, newCh, newStartIdx)
         oldStartVnode = oldCh[++oldStartIdx]
@@ -528,19 +657,30 @@ export function createPatchFunction (backend) {
       removeVnodes(oldCh, oldStartIdx, oldEndIdx)
     }
   }
-
+  /**
+   * 检查重复的key
+   * @param {VNode[]} children 子元素
+   */
   function checkDuplicateKeys (children) {
+    // 存储key
     const seenKeys = {}
+    // 遍历子元素
     for (let i = 0; i < children.length; i++) {
+      // 获取对应vnode
       const vnode = children[i]
+      // 获取元素的key
       const key = vnode.key
+      // 判断key是否存在
       if (isDef(key)) {
+        // 判断对应的key是否存在
         if (seenKeys[key]) {
+          // 存在则报错
           warn(
             `Duplicate keys detected: '${key}'. This may cause an update error.`,
             vnode.context
           )
         } else {
+          // 设置为true
           seenKeys[key] = true
         }
       }
@@ -553,7 +693,15 @@ export function createPatchFunction (backend) {
       if (isDef(c) && sameVnode(node, c)) return i
     }
   }
-
+  /**
+   * 修补vnode
+   * @param {VNode} oldVnode 旧vnode
+   * @param {VNode} vnode 新Vnode
+   * @param {any[]} insertedVnodeQueue 插入的队列
+   * @param {*} ownerArray
+   * @param {*} index
+   * @param {*} removeOnly
+   */
   function patchVnode (
     oldVnode,
     vnode,
@@ -562,17 +710,19 @@ export function createPatchFunction (backend) {
     index,
     removeOnly
   ) {
+    // 如果新旧相同则直接返回
     if (oldVnode === vnode) {
       return
     }
-
+    // 判断elm是否存在
     if (isDef(vnode.elm) && isDef(ownerArray)) {
       // clone reused vnode
+      // 克隆vnode
       vnode = ownerArray[index] = cloneVNode(vnode)
     }
-
+    // 设置元素
     const elm = vnode.elm = oldVnode.elm
-
+    // 判断是否为异步组件
     if (isTrue(oldVnode.isAsyncPlaceholder)) {
       if (isDef(vnode.asyncFactory.resolved)) {
         hydrate(oldVnode.elm, vnode, insertedVnodeQueue)
@@ -586,37 +736,52 @@ export function createPatchFunction (backend) {
     // note we only do this if the vnode is cloned -
     // if the new node is not cloned it means the render functions have been
     // reset by the hot-reload-api and we need to do a proper re-render.
+    // 判断是否为静态,并且两者key相同
     if (isTrue(vnode.isStatic) &&
       isTrue(oldVnode.isStatic) &&
       vnode.key === oldVnode.key &&
       (isTrue(vnode.isCloned) || isTrue(vnode.isOnce))
     ) {
+      // 设置实例
       vnode.componentInstance = oldVnode.componentInstance
       return
     }
 
     let i
+    // 获取data
     const data = vnode.data
+    // 判断是否存在prepatch钩子
     if (isDef(data) && isDef(i = data.hook) && isDef(i = i.prepatch)) {
+      // 调用钩子
       i(oldVnode, vnode)
     }
-
+    // 获取自元素列表
     const oldCh = oldVnode.children
     const ch = vnode.children
+    // 判断data是否存在
     if (isDef(data) && isPatchable(vnode)) {
+      // 遍历update钩子，并且调用
       for (i = 0; i < cbs.update.length; ++i) cbs.update[i](oldVnode, vnode)
+      // 调用自身update钩子
       if (isDef(i = data.hook) && isDef(i = i.update)) i(oldVnode, vnode)
     }
+    // 判断text是否不存在
     if (isUndef(vnode.text)) {
+      // 判断旧子元素是否存在，并且当前自元素存在
       if (isDef(oldCh) && isDef(ch)) {
+        // 新旧子元素数组不相等则更新
         if (oldCh !== ch) updateChildren(elm, oldCh, ch, insertedVnodeQueue, removeOnly)
-      } else if (isDef(ch)) {
+      } else if (isDef(ch)) { // 判断新的children是否存在
         if (process.env.NODE_ENV !== 'production') {
+          // 检测重复的key
           checkDuplicateKeys(ch)
         }
+        // 判断旧vnode的text是否存在，存则则设置内容为空
         if (isDef(oldVnode.text)) nodeOps.setTextContent(elm, '')
+        // 添加vNode
         addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue)
       } else if (isDef(oldCh)) {
+        // 移除旧的
         removeVnodes(oldCh, 0, oldCh.length - 1)
       } else if (isDef(oldVnode.text)) {
         nodeOps.setTextContent(elm, '')
@@ -628,14 +793,23 @@ export function createPatchFunction (backend) {
       if (isDef(i = data.hook) && isDef(i = i.postpatch)) i(oldVnode, vnode)
     }
   }
-
+  /**
+   * 插入钩子
+   * @param {VNode} vnode 虚拟node
+   * @param {any[]} queue 插入的队列
+   * @param {boolean} initial 是否为初始化
+   */
   function invokeInsertHook (vnode, queue, initial) {
     // delay insert hooks for component root nodes, invoke them after the
     // element is really inserted
+    // 判断是否为初始化, 并且存在父元素
     if (isTrue(initial) && isDef(vnode.parent)) {
+      // 设置到pendingInsert内
       vnode.parent.data.pendingInsert = queue
     } else {
+      // 遍历队列数组
       for (let i = 0; i < queue.length; ++i) {
+        // 调用插入钩子
         queue[i].data.hook.insert(queue[i])
       }
     }
@@ -776,19 +950,27 @@ export function createPatchFunction (backend) {
       // 创建元素
       createElm(vnode, insertedVnodeQueue)
     } else {
+      // 判断是否为真实的node
       const isRealElement = isDef(oldVnode.nodeType)
+      // 非真实的node并且旧node和新node一样
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
         // patch existing root node
+        // 修补vnode
         patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly)
       } else {
+        // 是否为真实node
         if (isRealElement) {
           // mounting to a real element
           // check if this is server-rendered content and if we can perform
           // a successful hydration.
+          // 判断nodeType为元素节点,并且存在ssr属性
           if (oldVnode.nodeType === 1 && oldVnode.hasAttribute(SSR_ATTR)) {
+            // 移除ssr属性
             oldVnode.removeAttribute(SSR_ATTR)
+            // 设置为true
             hydrating = true
           }
+          // 如果为true
           if (isTrue(hydrating)) {
             if (hydrate(oldVnode, vnode, insertedVnodeQueue)) {
               invokeInsertHook(vnode, insertedVnodeQueue, true)
@@ -805,14 +987,18 @@ export function createPatchFunction (backend) {
           }
           // either not server-rendered, or hydration failed.
           // create an empty node and replace it
+          // 创建一个空的vnode
           oldVnode = emptyNodeAt(oldVnode)
         }
 
         // replacing existing element
+        // 获取vnode的elm属性
         const oldElm = oldVnode.elm
+        // 获取父节点
         const parentElm = nodeOps.parentNode(oldElm)
 
         // create new node
+        // 创建新的元素
         createElm(
           vnode,
           insertedVnodeQueue,
@@ -824,6 +1010,7 @@ export function createPatchFunction (backend) {
         )
 
         // update parent placeholder node element, recursively
+        // 判断vnode父元素是否存在
         if (isDef(vnode.parent)) {
           let ancestor = vnode.parent
           const patchable = isPatchable(vnode)
@@ -861,8 +1048,9 @@ export function createPatchFunction (backend) {
         }
       }
     }
-
+    // 调用插入钩子
     invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch)
+    // 返回vnode实例
     return vnode.elm
   }
 }

@@ -73,5 +73,5 @@ export function isUnknownElement (tag: string): boolean {
     return (unknownElementCache[tag] = /HTMLUnknownElement/.test(el.toString()))
   }
 }
-
+/** 是否为input的type */
 export const isTextInputType = makeMap('text,number,password,search,email,tel,url')

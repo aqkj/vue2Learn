@@ -423,7 +423,11 @@ function isInInactiveTree (vm) {
   }
   return false
 }
-
+/**
+ * 启用子组件
+ * @param {object} vm 组件实例
+ * @param {*} direct
+ */
 export function activateChildComponent (vm: Component, direct?: boolean) {
   if (direct) {
     vm._directInactive = false
@@ -435,9 +439,12 @@ export function activateChildComponent (vm: Component, direct?: boolean) {
   }
   if (vm._inactive || vm._inactive === null) {
     vm._inactive = false
+    // 遍历子实例
     for (let i = 0; i < vm.$children.length; i++) {
+      // 递归
       activateChildComponent(vm.$children[i])
     }
+    // 调用activate钩子
     callHook(vm, 'activated')
   }
 }
